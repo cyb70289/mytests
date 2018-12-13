@@ -11,3 +11,4 @@ clean:
 	rm -f read-le ascii
 
 ascii: ascii.c ascii.S
+	gcc ${CPPFLAGS} -o ascii $^
