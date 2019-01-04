@@ -8,7 +8,7 @@ all:
 
 .PHONY: clean
 clean:
-	rm -f read-le ascii
+	rm -f read-le ascii 8way
 
 ascii: ascii.c ascii.S
 	gcc ${CPPFLAGS} -o ascii $^
