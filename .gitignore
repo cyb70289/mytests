@@ -1,6 +1,7 @@
 read-le
 ascii
 8way
+pagesize
 
 # Prerequisites
 *.d
