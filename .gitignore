@@ -4,6 +4,7 @@ ascii
 pagesize
 mt-print
 mt-cond
+order
 
 # Prerequisites
 *.d
