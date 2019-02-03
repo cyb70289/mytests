@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-const int consumers = 6;
+const int consumers = 50;
 
 sem_t sem_consumer_prepare, sem_done_prepare;
 sem_t sem_consumer, sem_done;
@@ -16,16 +16,8 @@ volatile char input_changed[256];
 
 volatile unsigned int caught = 0;
 
-char buf[128*1024];
-
 #define wmb()   __asm__ __volatile__ ("dmb ish"   : : : "memory")
 #define rmb()   __asm__ __volatile__ ("dmb ishld" : : : "memory")
-
-void fillcache()
-{
-    for (int i = 0; i < sizeof(buf); ++i)
-        buf[i] += i;
-}
 
 void *consumer(void *arg)
 {
@@ -37,7 +29,7 @@ void *consumer(void *arg)
 
         sem_wait(&sem_consumer);
 
-        fillcache();
+        usleep(10);
 
         while (*input_changed == 0);
         if (*input == 0x55) {
@@ -76,9 +68,8 @@ int main(void)
         for (int i = 0; i < consumers; ++i)
             sem_post(&sem_consumer);
 
-        fillcache();
-
         *input = 0xAA;
+        wmb();
         *input_changed = 1;
 
         for (int i = 0; i < consumers; ++i)
