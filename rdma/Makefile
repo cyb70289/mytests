@@ -1,4 +1,4 @@
-LDLIBS += -libverbs
+LDLIBS += -libverbs -pthread
 
 all: ibv
 
