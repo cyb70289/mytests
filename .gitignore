@@ -5,6 +5,7 @@ pagesize
 mt-print
 mt-cond
 order
+per-thread
 
 # Prerequisites
 *.d
