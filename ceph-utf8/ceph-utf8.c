@@ -93,19 +93,19 @@ int encode_utf8_quick(unsigned long u, unsigned char *buf)
 		buf[0] = u;
 		return 1;
 	} else if (u <= 0x000007FF) {
-		buf[1] = 0x80 | (u & 0x3F);
 		buf[0] = 0xC0 | (u >> 6);
+		buf[1] = 0x80 | (u & 0x3F);
 		return 2;
 	} else if (u <= 0x0000FFFF) {
-		buf[2] = 0x80 | (u & 0x3F);
-		buf[1] = 0x80 | ((u >> 6) & 0x3F);
 		buf[0] = 0xE0 | (u >> 12);
+		buf[1] = 0x80 | ((u >> 6) & 0x3F);
+		buf[2] = 0x80 | (u & 0x3F);
 		return 3;
 	} else if (u <= 0x0010FFFF) {
-		buf[3] = 0x80 | (u & 0x3F);
-		buf[2] = 0x80 | ((u >> 6) & 0x3F);
-		buf[1] = 0x80 | ((u >> 12) & 0x3F);
 		buf[0] = 0xF0 | (u >> 18);
+		buf[1] = 0x80 | ((u >> 12) & 0x3F);
+		buf[2] = 0x80 | ((u >> 6) & 0x3F);
+		buf[3] = 0x80 | (u & 0x3F);
 		return 4;
 	}
 
@@ -276,11 +276,13 @@ int main(void)
 	fprintf(stderr, "validation ok\n");
 
 	/* Benchmark */
-	fprintf(stderr, "\nbench current code: encode_utf8... ");
-	bench(decoded, n_decoded, encoded, len, encode_utf8);
-
+#ifdef BENCH_QUICK
 	fprintf(stderr, "\nbench optimized code: encode_utf8_quick... ");
 	bench(decoded, n_decoded, encoded, len, encode_utf8_quick);
+#else
+	fprintf(stderr, "\nbench current code: encode_utf8... ");
+	bench(decoded, n_decoded, encoded, len, encode_utf8);
+#endif
 
 	return 0;
 }

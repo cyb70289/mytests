@@ -1,7 +1,10 @@
-CC = gcc
-CFLAGS += -O3
+all: encode-origin encode-quick
 
-all: ceph-utf8
+encode-origin: ceph-utf8.c
+	gcc -O3 $^ -o $@
+
+encode-quick: ceph-utf8.c
+	gcc -O3 -DBENCH_QUICK $^ -o $@
 
 clean:
-	rm -f ceph-utf8
+	rm -f encode-origin encode-quick
