@@ -82,9 +82,11 @@ int encode_utf8(unsigned long u, unsigned char *buf)
 ////////////////////////////////////////////////////////////////////////
 // Optimized code
 ////////////////////////////////////////////////////////////////////////
-/* Per https://en.wikipedia.org/wiki/UTF-8#Invalid_code_points,
+/* XXX: Per https://en.wikipedia.org/wiki/UTF-8#Invalid_code_points,
  * since RFC3629(November 2003), code points after U+10FFFF must be treated
  * as invalid UTF-8 byte sequence.
+ * But to be compatible with old code, below implementation still accepts
+ * those illegal UTF-8 strings.
  */
 int encode_utf8_quick(unsigned long u, unsigned char *buf)
 {
@@ -101,15 +103,32 @@ int encode_utf8_quick(unsigned long u, unsigned char *buf)
 		buf[1] = 0x80 | ((u >> 6) & 0x3F);
 		buf[2] = 0x80 | (u & 0x3F);
 		return 3;
-	} else if (u <= 0x0010FFFF) {
+	} else if (u <= 0x001FFFFF) {
 		buf[0] = 0xF0 | (u >> 18);
 		buf[1] = 0x80 | ((u >> 12) & 0x3F);
 		buf[2] = 0x80 | ((u >> 6) & 0x3F);
 		buf[3] = 0x80 | (u & 0x3F);
 		return 4;
-	}
+	} else {
+		/* Slow path for rare(illegal) code points */
+		int len = 5;			/* (001FFFFF, 03FFFFFF] */
+		unsigned char mask = 0xF8;
 
-	return -1;
+		if (u > 0x7FFFFFFF) {
+			return -1;
+		} else if (u > 0x03FFFFFF) {
+			len = 6;		/* (03FFFFFF, 7FFFFFFF] */
+			mask = 0xFC;
+		}
+
+		for (int i = len-1; i >= 1; --i) {
+			buf[i] = 0x80 | (u & 0x3F);
+			u >>= 6;
+		}
+		buf[0] = mask | u;
+
+		return len;
+	}
 }
 
 /*
