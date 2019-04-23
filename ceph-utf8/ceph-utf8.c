@@ -90,7 +90,6 @@ int encode_utf8(unsigned long u, unsigned char *buf)
  */
 int encode_utf8_quick(unsigned long u, unsigned char *buf)
 {
-	/* Fast path for common code points */
 	if (u <= 0x0000007F) {
 		buf[0] = u;
 		return 1;
@@ -110,24 +109,23 @@ int encode_utf8_quick(unsigned long u, unsigned char *buf)
 		buf[3] = 0x80 | (u & 0x3F);
 		return 4;
 	} else {
-		/* Slow path for rare(illegal) code points */
-		int len = 5;			/* (001FFFFF, 03FFFFFF] */
-		unsigned char mask = 0xF8;
-
-		if (u > 0x7FFFFFFF) {
-			return -1;
-		} else if (u > 0x03FFFFFF) {
-			len = 6;		/* (03FFFFFF, 7FFFFFFF] */
-			mask = 0xFC;
+		/* rare/illegal code points */
+		if (u <= 0x03FFFFFF) {
+			for (int i = 4; i >= 1; --i) {
+				buf[i] = 0x80 | (u & 0x3F);
+				u >>= 6;
+			}
+			buf[0] = 0xF8 | u;
+			return 5;
+		} else if (u <= 0x7FFFFFFF) {
+			for (int i = 5; i >= 1; --i) {
+				buf[i] = 0x80 | (u & 0x3F);
+				u >>= 6;
+			}
+			buf[0] = 0xFC | u;
+			return 6;
 		}
-
-		for (int i = len-1; i >= 1; --i) {
-			buf[i] = 0x80 | (u & 0x3F);
-			u >>= 6;
-		}
-		buf[0] = mask | u;
-
-		return len;
+		return -1;
 	}
 }
 
@@ -234,9 +232,10 @@ static unsigned char *load_test_file(int *len)
 /* Fill test buf with patterns */
 static unsigned char *load_test_buf(int len)
 {
+	/* code len = 1, 2, 3, 4 */
 	const char utf8[] = "\x55\xC7\x99\xEF\x88\xBF\xF0\x90\xBF\x80";
-	//const char utf8[] = "\xF9\x81\x82\x83\x84";
-	//const char utf8[] = "\xFD\x81\x82\x83\x84\x85";
+	/* code len = 5, 6 */
+	//const char utf8[] = "\xF9\x81\x82\x83\x84\xFD\x81\x82\x83\x84\x85";
 	const int utf8_len = sizeof(utf8)/sizeof(utf8[0]) - 1;
 
 	unsigned char *data = malloc(len);
