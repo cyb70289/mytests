@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <errno.h>
 
 static __thread int per_thread;
 
 void *thread(void *arg)
 {
-    printf("%p\n", &per_thread);
+    printf("%p, %p\n", &per_thread, &errno);
 
     return NULL;
 }
