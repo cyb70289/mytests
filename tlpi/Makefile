@@ -1,6 +1,8 @@
 CFLAGS += -std=c11 -O3
 
-all:
+OBJS := fd open
+
+all: ${OBJS}
 
 clean:
-	rm -f *.o fd
+	rm -f *.o ${OBJS}
