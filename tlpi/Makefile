@@ -1,6 +1,6 @@
-CFLAGS += -std=c11 -O3
+CFLAGS += -std=c11 -O3 -pthread
 
-OBJS := fd open
+OBJS := fd open syscall-atomic
 
 all: ${OBJS}
 
