@@ -1,5 +1,7 @@
 /* trigger signal in signal handler and call itself recursively */
 
+#define _DEFAULT_SOURCE
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>

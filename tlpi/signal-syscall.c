@@ -1,5 +1,7 @@
 /* syscall won't be interrupted by a signal if it's ignored */
 
+#define _DEFAULT_SOURCE
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
