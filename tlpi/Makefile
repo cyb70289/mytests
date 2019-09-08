@@ -7,4 +7,4 @@ OBJS += zombie sched daemon syslog mmap pipe
 all: ${OBJS}
 
 clean:
-	rm -f *.o ${OBJS}
+	@rm -f *.o ${OBJS}
