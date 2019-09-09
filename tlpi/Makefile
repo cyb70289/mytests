@@ -2,7 +2,7 @@ CFLAGS += -std=c11 -O3 -pthread -Wno-unused-result
 
 OBJS := fd open syscall-atomic append write-file clock file-buf tail fd-exec
 OBJS += stdin-buf signal-safe signal-nodefer signal-syscall fork signal-sync
-OBJS += zombie sched daemon syslog mmap pipe
+OBJS += zombie sched daemon syslog mmap pipe sock-un
 
 all: ${OBJS}
 
