@@ -1,6 +1,6 @@
 /* SIGBUS when access passes end of file(up round to page boundary) */
 
-#define _BSD_SOURCE
+#define _DEFAULT_SOURCE
 
 #include <stdio.h>
 #include <string.h>
