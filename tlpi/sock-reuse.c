@@ -52,8 +52,9 @@ int main(void)
     s2 = accept(s, (struct sockaddr *)&sa, &sa_len);
     assert(s2 >= 0);
 
-    inet_ntop(AF_INET, &sa, ip, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &sa.sin_addr, ip, INET_ADDRSTRLEN);
     printf("connection from %s\n", ip);
+    printf("parent exit, child handling the connection\n");
 
     if (fork() == 0) {
         char buf[10];
@@ -62,9 +63,11 @@ int main(void)
         while (read(s2, buf, 10) > 0)
             ;
         close(s2);
+        printf("child exit\n");
     }
 
     close(s);
     close(s2);
+
     return 0;
 }
