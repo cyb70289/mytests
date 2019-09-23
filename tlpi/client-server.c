@@ -78,12 +78,6 @@ static void client(int s)
             break;
         }
 
-        if ((fds[0].revents & (POLLHUP|POLLERR)) ||
-            (fds[1].revents & (POLLHUP|POLLERR))) {
-            printf("client error\n");
-            break;
-        }
-
         if (fds[0].revents & POLLIN) {
             while (1) {
                 /* read from stdin */
@@ -128,6 +122,12 @@ static void client(int s)
                     break;
                 }
             }
+        }
+
+        if ((fds[0].revents & (POLLHUP|POLLERR)) ||
+            (fds[1].revents & (POLLHUP|POLLERR))) {
+            printf("client error\n");
+            break;
         }
     }
 }
