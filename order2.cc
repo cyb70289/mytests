@@ -30,6 +30,10 @@ static void *thread1Func(void *param)
         X.compare_exchange_strong(v, 1, std::memory_order_acquire);
         r1 = Y.load(std::memory_order_relaxed);
 #endif
+        /* BUG on x86, good on Arm
+         * X.store(1, std::memory_order_release);
+         * r1 = Y.load(std::memory_order_acquire);
+         */
 
         sem_post(&endSema);         // Notify transaction complete
     }
@@ -53,6 +57,10 @@ static void *thread2Func(void *param)
         std::atomic_thread_fence(std::memory_order_acquire);
         r2 = X.load(std::memory_order_relaxed);
 #endif
+        /* BUG on x86, good on Arm
+         * Y.store(1, std::memory_order_release);
+         * r2 = X.load(std::memory_order_acquire);
+         */
 
         sem_post(&endSema);         // Notify transaction complete
     }
