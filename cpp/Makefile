@@ -8,4 +8,4 @@ all:
 
 .PHONY: clean
 clean:
-	rm -f uniq-ptr 
+	rm -f uniq-ptr shared-ptr
