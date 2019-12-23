@@ -9,7 +9,7 @@ all:
 .PHONY: clean
 clean:
 	rm -f read-le ascii 8way pagesize mt-print mt-cond order per-thread \
-	      rabin printf order2
+	      rabin printf order2 callonce
 
 ascii: ascii.c ascii.S
 	gcc ${CPPFLAGS} -o ascii $^
