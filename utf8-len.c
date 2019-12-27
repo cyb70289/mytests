@@ -40,12 +40,54 @@ static inline int utf8_char_length_tbl(char c)
     return tbl[((unsigned char)c) >> 3];
 }
 
+static int utf8_length(const char* data, int data_len)
+{
+    int char_len = 0;
+    int count = 0;
+    for (int i = 0; i < data_len; i += char_len) {
+        char_len = utf8_char_length(data[i]);
+        if (char_len == 0 || i + char_len > data_len) {
+            printf("utf8_length: ERROR\n");
+            exit(1);
+        }
+        for (int j = 1; j < char_len; ++j) {
+            if ((data[i + j] & 0xC0) != 0x80) {
+                printf("utf8_length: ERROR\n");
+                exit(1);
+            }
+        }
+        ++count;
+    }
+    return count;
+}
+
+static int utf8_length_tbl(const char* data, int data_len)
+{
+    int char_len = 0;
+    int count = 0;
+    for (int i = 0; i < data_len; i += char_len) {
+        char_len = utf8_char_length_tbl(data[i]);
+        if (char_len == 0 || i + char_len > data_len) {
+            printf("utf8_length_tbl: ERROR\n");
+            exit(1);
+        }
+        for (int j = 1; j < char_len; ++j) {
+            if ((data[i + j] & 0xC0) != 0x80) {
+                printf("utf8_length_tbl: ERROR\n");
+                exit(1);
+            }
+        }
+        ++count;
+    }
+    return count;
+}
+
 static void show_speed(struct timeval *tv1, struct timeval *tv2, double size)
 {
     double time = tv2->tv_usec - tv1->tv_usec;
     time = time / 1000000 + tv2->tv_sec - tv1->tv_sec;
     size /= (1024*1024);
-    printf("%.2f MB/s\n\n", size / time);
+    printf("%.2f MB/s\n", size / time);
 }
 
 int main(void)
@@ -53,7 +95,7 @@ int main(void)
     const int rounds = 5*1024*1024;
     const int bufsz = 256;
 
-    long n1 = 0, n2 = 0;
+    long n = 0;
     char buf[bufsz];
     struct timeval tv1, tv2;
 
@@ -65,37 +107,53 @@ int main(void)
         }
     }
 
-    /* generate random test buffer */
     srand(time(NULL));
+
+    printf("********** microbenchmark with random buffer **********\n");
     for (int i = 0; i < bufsz; ++i) {
         buf[i] = rand();
     }
-    printf("random test buffer generated\n\n");
 
-    printf("bench original code\n");
+    printf("bench utf8_char_length: original\n");
     gettimeofday(&tv1, 0);
     for (int i = 0; i < rounds; ++i) {
         for (int j = 0; j < bufsz; ++j) {
-            n1 += utf8_char_length(buf[j]);
+            n += utf8_char_length(buf[j]);
         }
     }
     gettimeofday(&tv2, 0);
     show_speed(&tv1, &tv2, (double)rounds*bufsz);
 
-    printf("bench optimized code\n");
+    printf("bench utf8_char_length_tb: lookup table\n");
     gettimeofday(&tv1, 0);
     for (int i = 0; i < rounds; ++i) {
         for (int j = 0; j < bufsz; ++j) {
-            n2 += utf8_char_length_tbl(buf[j]);
+            n += utf8_char_length_tbl(buf[j]);
         }
     }
     gettimeofday(&tv2, 0);
     show_speed(&tv1, &tv2, (double)rounds*bufsz);
 
-    if (n1 != n2) {
-        printf("ERROR!!!\n");
-        return 1;
+    printf("********** benchmark with ascii buffer **********\n");
+    for (int i = 0; i < bufsz; ++i) {
+        buf[i] &= 0x7F;
     }
 
-    return 0;
+    printf("bench utf8_length: original\n");
+    gettimeofday(&tv1, 0);
+    for (int i = 0; i < rounds; ++i) {
+        n += utf8_length(buf, bufsz) ;
+    }
+    gettimeofday(&tv2, 0);
+    show_speed(&tv1, &tv2, (double)rounds*bufsz);
+
+    printf("bench utf8_length: lookup table\n");
+    gettimeofday(&tv1, 0);
+    for (int i = 0; i < rounds; ++i) {
+        n += utf8_length_tbl(buf, bufsz);
+    }
+    gettimeofday(&tv2, 0);
+    show_speed(&tv1, &tv2, (double)rounds*bufsz);
+
+    return n;
 }
