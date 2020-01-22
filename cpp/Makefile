@@ -8,4 +8,4 @@ all:
 
 .PHONY: clean
 clean:
-	rm -f uniq-ptr shared-ptr sort minmax
+	rm -f uniq-ptr shared-ptr sort minmax sort-range
