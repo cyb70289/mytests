@@ -1,0 +1,61 @@
+account
+=======
+github: spdkcsi-bot, password same as cyb70289
+
+
+networking
+==========
+x86 server              arm server
+10.101.96.120           213.146.155.79
+run jenkins server      proxy jenkins on x86 to public
+run jenkins node        run jenkins node
+
+
+prepare agent (x86, Arm)
+========================
+- 00-prepare-agent.sh
+- 01-create-jenkins-user.sh
+- sudo apt install -y openjdk-8-jre
+
+
+Arm node (with public ip)
+=========================
+- install nginx (proxy http to jenkins on x86)
+  * sudo apt install -y nginx
+  * cp jenkins-nginx.conf to /etc/nginx/conf.d
+  * systemctl restart nginx
+
+
+x86 node (no public ip)
+=======================
+- start a new jenkins server
+  * mkdir ${HOME}/jenkins_home && chmod 777 ${HOME}/jenkins_home
+  * docker run -id --name jenkins --hostname jenkins --restart=always -p 8080:8080 -p 50000:50000 -v ${HOME}/jenkins_home:/var/jenkins_home jenkins/jenkins:lts
+  * install all recommended jenkins plugins
+  * set jenkins url to public ip
+  * set one executor: manage jenkins -> configure system
+  * allow anonymous read: manage jenkins -> configure global security
+  * reference https://github.com/jenkinsci/docker/blob/master/README.md
+
+- ssh to agents
+  * docker exec -it jenkins bash
+  * ssh-keygen
+  * login x86/Arm nodes, trust jenkins pubkey on nodes
+
+- create agents "spdkcsi-ci-x86", "spdkcsi-ci-arm"
+  * use jenkins private key generated in above step as credential
+  * root dir: /tmp
+
+- connect to spdkcsi gerrit
+  * trust jenkins pubkey in spdk gerrit spdkcsi-bot user
+  * install "gerrit trigger" plugin, create server "spdkcsi-gerrit"
+  * hostname: review.spdk.io, url: https://review.spdk.io/
+  * username: spdkcsi-bot
+  * reference https://plugins.jenkins.io/gerrit-trigger/
+
+- create jenkins ci job
+  * download https://raw.githubusercontent.com/spdk/spdk-csi/master/scripts/ci/spdkcsi-ci.yaml
+  * pip3 install --user jenkins-job-builder
+  * jenkins-jobs --conf jenkins_jobs.ini test spdkcsi-ci.yaml
+  * jenkins-jobs --conf jenkins_jobs.ini update spdkcsi-ci.yaml
+  * reference https://docs.openstack.org/infra/jenkins-job-builder/quick-start.html
