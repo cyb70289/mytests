@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <vector>
+#include <unordered_map>
 #include <algorithm>
 #include <numeric>
 #include <chrono>
@@ -38,7 +39,29 @@ static inline void stl_sort(const std::vector<T>& array, std::vector<size_t>& id
                      [&array](size_t i1, size_t i2) { return array[i1] < array[i2]; });
 }
 
+template <typename T>
+static std::pair<T, int64_t> stl_mode(const std::vector<T>& array) {
+    std::unordered_map<T, int64_t> value_counts{};
+    for (const auto value : array) {
+        ++value_counts[value];
+    }
+
+    T mode = std::numeric_limits<T>::min();
+    int64_t count = 0;
+    for (const auto& value_count : value_counts) {
+        auto this_value = value_count.first;
+        auto this_count = value_count.second;
+        if (this_count > count || (this_count == count && this_value < mode)) {
+            count = this_count;
+            mode = this_value;
+        }
+    }
+
+    return std::make_pair(mode, count);
+}
+
 using sort_type = long;
+using mode_type = sort_type;
 
 int main(int argc, char *argv[]) {
     long n = 10000000;
@@ -50,8 +73,6 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-
-    std::cout << "sort " << n << " elements\n";
 
     /***************** prepare test data ********************/
     auto array = std::vector<sort_type>(n);
@@ -69,6 +90,8 @@ int main(int argc, char *argv[]) {
     }
 
     /************************ sort *************************/
+    std::cout << "sort " << n << " elements\n";
+
     /* warm up */
     std::iota(idx_sort.begin(), idx_sort.end(), 0);
     stl_sort(array, idx_sort);
@@ -101,12 +124,51 @@ int main(int argc, char *argv[]) {
     std::chrono::duration<double> elapsed_minmax_sort = (t2 - t1) / loop_cnt;
     std::cout << "minmax + sort: " << elapsed_minmax_sort.count() << " s\n";
 
-    /*************** calc minmax penalty *****************/
+    /*************** calc minmax penalty to sort *****************/
     double penalty = (elapsed_minmax_sort - elapsed_sort) / elapsed_sort;
     if (penalty < 0) {
         penalty = 0;
     }
-    std::cout << "penalty: " << std::setprecision(2) << penalty * 100 << "%\n";
+    std::cout << "penalty to sort: " << std::setprecision(2) << penalty * 100 << "%\n";
+
+    /************************ mode *************************/
+    std::cout << "mode " << n << " elements\n";
+
+    /* warm up */
+    stl_mode(array);
+
+    /* bench */
+    t1 = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < loop_cnt; ++i) {
+        stl_mode(array);
+    }
+    t2 = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> elapsed_mode = (t2 - t1) / loop_cnt;
+    std::cout << "mode: " << elapsed_mode.count() << " s\n";
+
+    /****************** minmax + mode *********************/
+    /* warm up */
+    stl_minmax(array);
+    stl_mode(array);
+
+    /* bench */
+    t1 = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < loop_cnt; ++i) {
+        stl_minmax(array);
+        stl_mode(array);
+    }
+    t2 = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> elapsed_minmax_mode = (t2 - t1) / loop_cnt;
+    std::cout << "minmax + mode: " << elapsed_minmax_mode.count() << " s\n";
+
+    /*************** calc minmax penalty to mode *****************/
+    penalty = (elapsed_minmax_mode - elapsed_mode) / elapsed_mode;
+    if (penalty < 0) {
+        penalty = 0;
+    }
+    std::cout << "penalty to mode: " << std::setprecision(2) << penalty * 100 << "%\n";
 
     return 0;
 }
