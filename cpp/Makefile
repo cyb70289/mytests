@@ -9,4 +9,4 @@ all:
 .PHONY: clean
 clean:
 	rm -f uniq-ptr shared-ptr sort minmax sort-range minmax-penalty sort-nth \
-		  mode-range
+		  mode-range pext
