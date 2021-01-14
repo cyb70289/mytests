@@ -16,6 +16,8 @@ prepare agent (x86, Arm)
 - 00-prepare-agent.sh
 - 01-create-jenkins-user.sh
 - sudo apt install -y openjdk-8-jre
+- allocate hugepage at boot
+  GRUB_CMDLINE_LINUX="default_hugepagesz=2M hugepagesz=2M hugepages=1024"
 
 
 Arm node (with public ip)
