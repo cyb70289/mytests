@@ -1,27 +1,30 @@
-#include <atomic>
+#include <chrono>
 #include <iostream>
 #include <thread>
 
-volatile int value __attribute ((aligned(64)));
-volatile bool ready __attribute ((aligned(64)));
+// make sure value and ready are not in same cache line
+struct {
+  volatile char value;
+  char padding[63];
+  volatile bool ready;
+} g __attribute ((aligned(64)));
 
-// how many times out of order issues are observed
-std::atomic<int> oo_count{0};
+int oo_count = 0;
 
 #define wmb()   __asm__ __volatile__ ("dmb ish"   : : : "memory")
 #define rmb()   __asm__ __volatile__ ("dmb ishld" : : : "memory")
 
 void producer(void) {
-  value = 100;
-  ready =  true;
+  g.value = 0x99;
+  g.ready =  true;
 }
 
 void consumer(void) {
-  while (!ready)
+  while (!g.ready)
     ;
 
-  if (value == 0) {
-    std::cout << "out of order observed!!!\n";
+  if (g.value == 0) {
+    std::cout << "out-of-order observed!!!\n";
     ++oo_count;
   }
 }
@@ -30,8 +33,8 @@ int main(void) {
   long test_count = 0;
 
   while (1) {
-    value = 0;
-    ready = false;
+    g.value = 0;
+    g.ready = false;
 
     std::thread t1(consumer);
     std::thread t2(producer);
@@ -43,6 +46,8 @@ int main(void) {
     if (test_count % 10000 == 0) {
       std::cout << test_count << ':' << oo_count << '\n';
     }
+
+    std::this_thread::sleep_for(std::chrono::microseconds(1));
   }
 
   return 0;
