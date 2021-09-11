@@ -1,5 +1,5 @@
 CXX = g++
-CPPFLAGS = -g -O3 -Wall
+CPPFLAGS = -g -O3 -Wall -pthread
 CXXFLAGS = -std=c++11
 
 .PHONY: all
