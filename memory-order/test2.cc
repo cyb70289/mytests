@@ -2,7 +2,11 @@
 #include <iostream>
 #include <thread>
 
-#define mb()   __asm__ __volatile__ ("dmb ish"   : : : "memory")
+#ifdef __aarch64__
+#define mb()    __asm__ __volatile__("dmb ish"   : : : "memory")
+#else
+#define mb()    __asm__ __volatile__("mfence")
+#endif
  
 volatile int x, y;
 
