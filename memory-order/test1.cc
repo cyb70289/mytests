@@ -11,7 +11,7 @@ struct {
 
 int oo_count = 0;
 
-#define wmb()   __asm__ __volatile__ ("dmb ish"   : : : "memory")
+#define wmb()   __asm__ __volatile__ ("dmb ishst" : : : "memory")
 #define rmb()   __asm__ __volatile__ ("dmb ishld" : : : "memory")
 
 void producer(void) {

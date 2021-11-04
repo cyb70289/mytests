@@ -3,7 +3,7 @@
 #include <thread>
 
 #ifdef __aarch64__
-#define mb()    __asm__ __volatile__("dmb ish"   : : : "memory")
+#define mb()    __asm__ __volatile__("dmb ish" : : : "memory")
 #else
 #define mb()    __asm__ __volatile__("mfence")
 #endif
