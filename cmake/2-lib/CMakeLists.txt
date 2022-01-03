@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.2)
+project(test)
+add_library(func func.cc)
+add_executable(test main.cc)
+target_link_libraries(test PRIVATE func)
