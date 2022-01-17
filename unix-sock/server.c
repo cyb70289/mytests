@@ -14,7 +14,7 @@
 
 static
 int * recv_fd(int socket, int n) {
-        int *fds = (int*)malloc (n * sizeof(int));
+        int *fds = malloc (n * sizeof(int));
         struct msghdr msg = {0};
         struct cmsghdr *cmsg;
         char buf[CMSG_SPACE(n * sizeof(int))], dup[256];
@@ -33,63 +33,50 @@ int * recv_fd(int socket, int n) {
 
         memcpy (fds, (int *) CMSG_DATA(cmsg), n * sizeof(int));
 
-        for (int i = 0; i < sizeof(dup); ++i) {
-            if (dup[i] != (char)i) {
-                printf("ERROR! %d != %d\n", i, (int)dup[i]);
-                exit(1);
-            }
-        }
-
         return fds;
-}
-
-static
-void send_msg(int socket)
-{
-        struct msghdr msg = {0};
-        char dup[256];
-        struct iovec io = { .iov_base = dup, .iov_len = sizeof(dup) };
-        struct sockaddr_un addr;
-
-        for (int i = 0; i < sizeof(dup); ++i) {
-            dup[i] = (char)i;
-        }
-
-        memset(&addr, 0, sizeof(struct sockaddr_un));
-        addr.sun_family = AF_UNIX;
-        strncpy(addr.sun_path, "/tmp/fd-pass-client.socket", sizeof(addr.sun_path) - 1);
-
-        msg.msg_name = &addr;
-        msg.msg_namelen = sizeof(addr);
-        msg.msg_iov = &io;
-        msg.msg_iovlen = 1;
-
-        if (sendmsg (socket, &msg, 0) < 0)
-                handle_error ("Failed to send message");
 }
 
 int
 main(int argc, char *argv[]) {
         ssize_t nbytes;
         char buffer[256];
-        int sfd, *fds;
+        int sfd, cfd, *fds;
         struct sockaddr_un addr;
 
-        sfd = socket(AF_UNIX, SOCK_DGRAM, 0);
+        sfd = socket(AF_UNIX, SOCK_STREAM, 0);
         if (sfd == -1)
                 handle_error ("Failed to create socket");
 
-        if (unlink ("/tmp/fd-pass-server.socket") == -1 && errno != ENOENT)
+        if (unlink ("/tmp/fd-pass.socket") == -1 && errno != ENOENT)
                 handle_error ("Removing socket file failed");
 
         memset(&addr, 0, sizeof(struct sockaddr_un));
         addr.sun_family = AF_UNIX;
-        strncpy(addr.sun_path, "/tmp/fd-pass-server.socket", sizeof(addr.sun_path) - 1);
+        strncpy(addr.sun_path, "/tmp/fd-pass.socket", sizeof(addr.sun_path) - 1);
 
         if (bind(sfd, (struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1)
                 handle_error ("Failed to bind to socket");
 
-        fds = recv_fd (sfd, 2);
+        if (listen(sfd, 5) == -1)
+                handle_error ("Failed to listen on socket");
+
+        cfd = accept(sfd, NULL, NULL);
+        if (cfd == -1)
+                handle_error ("Failed to accept incoming connection");
+
+        struct sockaddr_un sa;
+        socklen_t len = sizeof(struct sockaddr_un);
+        if (getsockname(cfd, (struct sockaddr*)&sa, &len) == -1)
+                handle_error ("Failed to get sock name");
+        printf("sock name: %s\n", sa.sun_path);
+
+        memset(&sa, 0, sizeof(struct sockaddr_un));
+        len = sizeof(struct sockaddr_un);
+        if (getpeername(cfd, (struct sockaddr*)&sa, &len) == -1)
+                handle_error ("Failed to get sock name");
+        printf("peer name: %s\n", sa.sun_path);
+
+        fds = recv_fd (cfd, 2);
 
         for (int i=0; i<2; ++i) {
                 fprintf (stdout, "Reading from passed fd %d\n", fds[i]);
@@ -98,9 +85,7 @@ main(int argc, char *argv[]) {
                 *buffer = '\0';
         }
 
-        send_msg(sfd);
-
-        if (close(sfd) == -1)
+        if (close(cfd) == -1)
                 handle_error ("Failed to close client socket");
 
         return 0;
