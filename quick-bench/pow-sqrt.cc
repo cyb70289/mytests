@@ -1,3 +1,5 @@
+// https://quick-bench.com/q/-1kMpatChFMfZhAK2QCX1i3dDVo
+
 #include <random>
 #include <vector>
 #include <cmath>

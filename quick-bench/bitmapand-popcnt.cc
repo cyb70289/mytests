@@ -1,3 +1,5 @@
+// https://quick-bench.com/q/Iw42fZG_sZeomoRiUgzaWtcjXa4
+
 #define N 4096
 
 unsigned char a[N], b[N];
