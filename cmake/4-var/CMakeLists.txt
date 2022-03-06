@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.4)
+project(test)
+set(VAR_NORMAL "var1")
+set(VAR_CACHE "cahed var" CACHE STRING "")
+set(VAR_CACHE_FORCE "cached var force" CACHE STRING "" FORCE)
+message("VAR_NORMAL = ${VAR_NORMAL}")
+message("VAR_CACHE = ${VAR_CACHE}")
+message("VAR_CACHE_FORCE = ${VAR_CACHE_FORCE}")
