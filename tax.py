@@ -63,7 +63,7 @@ def get_inputs():
 
     bonus={}
     while True:
-        s = input('bonus month (press [return] if no more): ')
+        s = input('bonus month ([enter] if no more): ')
         if not s:
             break
         try:
@@ -84,8 +84,12 @@ def get_inputs():
     beneficial_month = None
     if bonus:
         while not beneficial_month:
+            s = input('beneficial month ([enter] to ignore): ')
+            if not s:
+                beneficial_month = -1
+                break
             try:
-                beneficial_month = int(input('beneficial month: '))
+                beneficial_month = int(s)
                 if beneficial_month < 1 or beneficial_month > 12 or \
                    beneficial_month not in bonus:
                        beneficial_value = None
