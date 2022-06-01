@@ -50,54 +50,64 @@ def beneficial_tax(bonus):
 
 
 def get_inputs():
-    salary = float(input('salary per month: '))
-    allowance = 1500
-    s = input('allowance per month ({}): '.format(allowance))
-    if s:
-        allowance = float(s)
-    deduction = 0
-    s = input('child, housing loan, elderly support deductions({}): '.format(
-              deduction))
-    if s:
-        deduction = float(s)
+    def get_month(hint):
+        month = None
+        while not month:
+            s = input(hint)
+            if not s:
+                return None
+            try:
+                month = int(s)
+                if month < 1 or month > 12:
+                    month = None
+                    raise ValueError()
+            except ValueError:
+                print('-- invalid month, try again')
+        return month
+
+    def get_float(hint, default=None):
+        value = None
+        while not value:
+            s = input(hint)
+            if (default is not None) and (not s):
+                return default
+            try:
+                value = float(s)
+            except ValueError:
+                print('-- invalid value, try again')
+        return value 
+
+    salary = get_float('salary per month: ')
+    allowance = get_float('allowance per month (1500): ', 1500)
+    deduction = \
+        get_float('child, housing loan, elderly support deductions(0): ', 0)
 
     bonus={}
     while True:
-        s = input('bonus month ([enter] if no more): ')
-        if not s:
-            break
-        try:
-            month = int(s)
-            if month < 1 or month > 12:
-                raise ValueError()
-        except ValueError:
-            print('-- invalid month, try again')
-            continue
-        value = None
-        while not value:
-            try:
-                value = float(input('  amount: '))
-            except ValueError:
-                print('-- invalid value, try again')
-        bonus[month] = value
+        month = get_month('bonus month ([enter] if done): ')
+        if month is None: break
+        bonus[month] = get_float('  amount: ')
 
     beneficial_month = None
     if bonus:
         while not beneficial_month:
-            s = input('beneficial month ([enter] to ignore): ')
-            if not s:
+            beneficial_month = \
+                get_month('beneficial month ([enter] to ignore): ')
+            if beneficial_month is None:
                 beneficial_month = -1
                 break
-            try:
-                beneficial_month = int(s)
-                if beneficial_month < 1 or beneficial_month > 12 or \
-                   beneficial_month not in bonus:
-                       beneficial_value = None
-                       raise ValueError()
-            except ValueError:
+            elif beneficial_month not in bonus:
+                beneficial_month = None
                 print('-- beneficial month not in bonus monthes, try again')
 
-    return salary+allowance, deduction+std_deduction, bonus, beneficial_month
+    cash_reward = {i:0 for i in range(1, 13)}
+    while True:
+        month = get_month('cash reward month ([enter] if done): ')
+        if month is None: break
+        cash_reward[month] = get_float('  amount: ')
+
+    return salary+allowance, deduction+std_deduction, bonus, \
+           beneficial_month, cash_reward
 
 
 def debug(s):
@@ -105,13 +115,15 @@ def debug(s):
         print(s)
 
 
-income_per_month, total_deduction, bonus, beneficial_month = get_inputs()
+income_per_month, total_deduction, bonus, \
+    beneficial_month, cash_reward = get_inputs()
 net_month_income, month_tax = {}, {}
 
 total_income, total_tax = 0.0, 0.0
 for month in range(1, 13):
     debug('========== month {} =========='.format(month))
-    income_this_month = income_per_month - housing - insurance - total_deduction
+    income_this_month = income_per_month + cash_reward[month] \
+                        - housing - insurance - total_deduction
     debug('income before tax: {:.02f}'.format(income_this_month))
     net_beneficial_bonus, beneficial_bonus_tax = 0.0, 0.0
     if month in bonus:
@@ -128,8 +140,8 @@ for month in range(1, 13):
     debug('salary tax: {:.02f}'.format(income_tax_this_month))
     month_tax[month] = income_tax_this_month - total_tax
     total_tax = income_tax_this_month
-    net_month_income[month] = income_this_month - month_tax[month] + \
-                              net_beneficial_bonus + total_deduction
+    net_month_income[month] = income_this_month - month_tax[month] \
+                              + net_beneficial_bonus + total_deduction
     month_tax[month] += beneficial_bonus_tax
     debug('net pay: {:.02f}, tax: {:.02f}'.format(
           net_month_income[month], month_tax[month]))
