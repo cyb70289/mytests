@@ -1,13 +1,13 @@
 import sys
 
-
+# top housing and insurance, shanghai, 2022
 # https://j.eastday.com/p/1633410715038073
-housing = 4342 * 0.5 + 3102 * 0.5
-
 # http://m.sh.bendibao.com/zffw/237665.html
+housing = 4342 * 0.5 + 3102 * 0.5
 insurance = 31014 * 0.105
 
-std_deduction = 5000
+# lowest income per month to pay tax, 2022
+tax_threshold = 5000
 
 
 # https://jcc.bjmu.edu.cn/docs/20220104113607391688.pdf
@@ -21,6 +21,9 @@ def income_tax(income):
             (660000,      0.30,  52920    ),
             (960000,      0.35,  85920    ),
             (sys.maxsize, 0.45,  181920   ))
+
+    if income <= tax_threshold:
+        return 0
 
     for upper, rate, deduction in tax_table:
         if income <= upper:
@@ -52,7 +55,7 @@ def beneficial_tax(bonus):
 def get_inputs():
     def get_month(hint):
         month = None
-        while not month:
+        while month is None:
             s = input(hint)
             if not s:
                 return None
@@ -67,7 +70,7 @@ def get_inputs():
 
     def get_float(hint, default=None):
         value = None
-        while not value:
+        while value is None:
             s = input(hint)
             if (default is not None) and (not s):
                 return default
@@ -79,6 +82,9 @@ def get_inputs():
 
     salary = get_float('salary per month: ')
     allowance = get_float('allowance per month (1500): ', 1500)
+    housing_insurance = get_float(
+            'housing + insurance (top {:.02f}): '.format(housing+insurance),
+            housing + insurance)
     deduction = \
         get_float('child, housing loan, elderly support deductions(0): ', 0)
 
@@ -90,7 +96,7 @@ def get_inputs():
 
     beneficial_month = None
     if bonus:
-        while not beneficial_month:
+        while beneficial_month is None:
             beneficial_month = \
                 get_month('beneficial month ([enter] to ignore): ')
             if beneficial_month is None:
@@ -106,8 +112,8 @@ def get_inputs():
         if month is None: break
         cash_reward[month] = get_float('  amount: ')
 
-    return salary+allowance, deduction+std_deduction, bonus, \
-           beneficial_month, cash_reward
+    return salary+allowance-housing_insurance, deduction+tax_threshold, \
+           bonus, beneficial_month, cash_reward
 
 
 def debug(s):
@@ -123,7 +129,7 @@ total_income, total_tax = 0.0, 0.0
 for month in range(1, 13):
     debug('========== month {} =========='.format(month))
     income_this_month = income_per_month + cash_reward[month] \
-                        - housing - insurance - total_deduction
+                        - total_deduction
     debug('income before tax: {:.02f}'.format(income_this_month))
     net_beneficial_bonus, beneficial_bonus_tax = 0.0, 0.0
     if month in bonus:
