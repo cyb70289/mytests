@@ -1,9 +1,10 @@
 import sys
 
-# top housing and insurance, shanghai, 2022
+# housing and insurance, shanghai, 2022
 # https://j.eastday.com/p/1633410715038073
-# http://m.sh.bendibao.com/zffw/237665.html
 housing = 4342 * 0.5 + 3102 * 0.5
+# TODO: insurance increased to 34188 since Jul-2022
+# http://sh.bendibao.com/zffw/202276/255006.shtm
 insurance = 31014 * 0.105
 
 # lowest income per month to pay tax, 2022
