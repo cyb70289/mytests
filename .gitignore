@@ -7,6 +7,7 @@ mt-cond
 order
 per-thread
 rabin
+cputime
 
 # Prerequisites
 *.d
