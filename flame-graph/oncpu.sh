@@ -1,11 +1,9 @@
 #!/bin/bash
 
-# client
-# $ sudo perf record -g ...
-# $ sudo sh -c 'perf script | nc -w1 a015565 6789'
-
-echo "run below command on client after perf record"
-echo "sudo sh -c 'perf script | nc -w1 $(hostname) 6789'"
+myip=$(hostname -I | cut -d' ' -f1)
+echo "on test node:"
+echo "sudo perf record -g ..."
+echo "sudo sh -c 'perf script | nc -w1 ${myip} 6789'"
 
 nc -l -p 6789 > /tmp/perf-script
 stat --printf="perf script size = %s\n" /tmp/perf-script
