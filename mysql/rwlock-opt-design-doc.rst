@@ -201,7 +201,7 @@ lock_word and lock status
                  |                             |
   0x10000000 --> +----------SX locked----------+
                  |                             |
-                 |         S/SX locked         |
+                 |        S & SX locked        |
                  |                             |
                  |                             |
            0 --> +-----------X locked----------+
@@ -209,15 +209,19 @@ lock_word and lock status
                  |  S locked, X lock waiting   |
                  |                             |
                  |                             |
- -0x10000000 --> +----------SX/X locked--------+
+ -0x10000000 --> +--------SX & X locked--------+
                  |                             |
-                 | S/SX locked, X lock waiting |
-                 | SX owner same as X          |
+                 | S locked, X lock waiting    |
+                 | X lock requester own SX lock|
                  |                             |
  -0x20000000 --> +----------2 X locked---------+
                  |                             |
                  |    X locked recursively     |
                  |                             |
+                 |                             |
+ -0x30000000 --> +--------SX & 2X locked-------+
+                 |                             |
+                 |  SX & X locked recursively  |
                  .             .               .
                  .             .               .
 
