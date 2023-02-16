@@ -3,7 +3,7 @@
 myip=$(hostname -I | cut -d' ' -f1)
 echo "on test node:"
 echo "sudo offcputime-bpfcc -df -p PID 5 > /tmp/__offcpu.stacks"
-echo "cat /tmp/__offcpu.stacks | nc -w1 ${myip} 6789'"
+echo "cat /tmp/__offcpu.stacks | nc -w1 ${myip} 6789"
 
 nc -l -p 6789 > /tmp/offcpu-stack
 stat --printf="offcpu file size = %s\n" /tmp/offcpu-stack
