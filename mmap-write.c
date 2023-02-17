@@ -34,6 +34,17 @@ int main(void)
 
     memset(buf, 0x55, sizeof(buf));
 
+    char* buf2 = malloc(_max_size);
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t1);
+    sz = 0;
+    while (sz + sizeof(buf) <= _max_size) {
+        memcpy(buf2 + sz, buf, sizeof(buf));
+        sz += sizeof(buf);
+    }
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t2);
+    printf("copy:  %ld ns\n", ns_diff(&t2, &t1));
+    free(buf2);
+
     fd = open(_f1, O_CREAT|O_RDWR|O_TRUNC, 0644);
     assert(fd != -1);
     unlink(_f1);
