@@ -8,6 +8,7 @@ order
 per-thread
 rabin
 cputime
+mmap-write
 
 # Prerequisites
 *.d
