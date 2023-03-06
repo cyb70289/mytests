@@ -1,3 +1,5 @@
+// compare performance of mmap+msync vs. write+fsync
+
 #define _DEFAULT_SOURCE
 
 #include <stdio.h>
@@ -15,7 +17,8 @@
 static const char *_f1 = "/tmp/__xxxxyyyy1__";
 static const char *_f2 = "/tmp/__xxxxyyyy2__";
 
-const int _max_size = 512 * 1024 * 1024;
+int _size = 1024 * 1024;    // size for each write
+int _count = 512;           // total writes
 
 long ns_diff(const struct timespec *t2, const struct timespec *t1)
 {
@@ -25,61 +28,75 @@ long ns_diff(const struct timespec *t2, const struct timespec *t1)
     return s * 1000000000LL + ns;
 }
 
-int main(void)
+int main(int argc, char* argv[])
 {
-    int fd, ret, sz;
+    if (argc == 3) {
+        _size = atoi(argv[1]);
+        _count = atoi(argv[2]);
+        if (_size < 1024 || _count < 1) {
+            printf("invalid argument\n");
+            return 1;
+        }
+    }
+    printf("size = %d, count = %d\n", _size, _count);
+
+    int fd, ret;
     char *addr;
-    char buf[1745];
+    char buf[1024];
     struct timespec t1, t2;
 
     memset(buf, 0x55, sizeof(buf));
 
-    char* buf2 = malloc(_max_size);
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t1);
-    sz = 0;
-    while (sz + sizeof(buf) <= _max_size) {
-        memcpy(buf2 + sz, buf, sizeof(buf));
-        sz += sizeof(buf);
-    }
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t2);
-    printf("copy:  %ld ns\n", ns_diff(&t2, &t1));
-    free(buf2);
-
+    // mmap
     fd = open(_f1, O_CREAT|O_RDWR|O_TRUNC, 0644);
     assert(fd != -1);
-    unlink(_f1);
-    ret = ftruncate(fd, _max_size);
+    ret = ftruncate(fd, _size * _count);
     assert(ret == 0);
 
-    addr = mmap(NULL, _max_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+    addr = mmap(NULL, _size * _count,
+                PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
     assert(addr != (char *)-1);
 
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t1);
-    sz = 0;
-    while (sz + sizeof(buf) <= _max_size) {
-        memcpy(addr + sz, buf, sizeof(buf));
-        sz += sizeof(buf);
+    char *addr2 = addr;
+    for (int i = 0; i < _count; ++i) {
+        int sz = 0;
+        while (sz + sizeof(buf) <= _size) {
+            memcpy(addr2 + sz, buf, sizeof(buf));
+            sz += sizeof(buf);
+        }
+        unsigned long offset = ((unsigned long)addr2) & 4095;
+        ret = msync(addr2 - offset, sz + offset, MS_SYNC);
+        if (ret) { perror("msync"); return 1; }
+        addr2 += sz;
     }
-    fsync(fd);
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t2);
-    printf("mmap:  %ld ns\n", ns_diff(&t2, &t1));
+    printf("mmap+msync:  %ld us\n", ns_diff(&t2, &t1) / 1000);
+    munmap(addr, _size * _count);
+    close(fd);
+    unlink(_f1);
 
+    // write
     fd = open(_f2, O_CREAT|O_RDWR|O_TRUNC, 0644);
     assert(fd != -1);
-    unlink(_f2);
-    ret = ftruncate(fd, _max_size);
+    ret = ftruncate(fd, _size * _count);
     assert(ret == 0);
 
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t1);
-    sz = 0;
-    while (sz + sizeof(buf) <= _max_size) {
-        ret = write(fd, buf, sizeof(buf));
-        if (ret <= 0) abort();
-        sz += ret;
+    for (int i = 0; i < _count; ++i) {
+        int sz = 0;
+        while (sz + sizeof(buf) <= _size) {
+            ret = write(fd, buf, sizeof(buf));
+            if (ret <= 0) abort();
+            sz += ret;
+        }
+        ret = fsync(fd);
+        if (ret) abort();
     }
-    fsync(fd);
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t2);
-    printf("write: %ld ns\n", ns_diff(&t2, &t1));
+    printf("write+fsync: %ld us\n", ns_diff(&t2, &t1) / 1000);
+    close(fd);
+    unlink(_f2);
 
     return 0;
 }
