@@ -60,6 +60,7 @@ int main(void)
         memcpy(addr + sz, buf, sizeof(buf));
         sz += sizeof(buf);
     }
+    fsync(fd);
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t2);
     printf("mmap:  %ld ns\n", ns_diff(&t2, &t1));
 
@@ -76,6 +77,7 @@ int main(void)
         if (ret <= 0) abort();
         sz += ret;
     }
+    fsync(fd);
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t2);
     printf("write: %ld ns\n", ns_diff(&t2, &t1));
 
