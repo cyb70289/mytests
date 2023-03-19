@@ -11,6 +11,8 @@ cputime
 mmap-write
 bench-lsb
 
+*.dSYM/
+
 # Prerequisites
 *.d
 
