@@ -68,6 +68,8 @@ int main(int argc, char* argv[])
         unsigned long offset = ((unsigned long)addr2) & 4095;
         ret = msync(addr2 - offset, sz + offset, MS_SYNC);
         if (ret) { perror("msync"); return 1; }
+        ret = fdatasync(fd);
+        if (ret) { perror("fdatasync"); return 1; }
         addr2 += sz;
     }
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t2);
@@ -90,7 +92,7 @@ int main(int argc, char* argv[])
             if (ret <= 0) abort();
             sz += ret;
         }
-        ret = fsync(fd);
+        ret = fdatasync(fd);
         if (ret) abort();
     }
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t2);
