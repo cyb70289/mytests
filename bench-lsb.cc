@@ -12,14 +12,16 @@ constexpr int _size = 1000;
 std::vector<size_t> _data;
 
 static inline size_t test_ffsll(size_t x) {
-    return ffsll(x) - 1;
+  return ffsll(x) - 1;
 }
 
 // x != 0
 static inline size_t test_optim(size_t x) {
-    size_t idx;
-    asm("rbit %0,%1" : "=r"(idx) : "r"(x));
-    return __builtin_clzll(idx);
+  // size_t idx;
+  // asm("rbit %0,%1" : "=r"(idx) : "r"(x));
+  // asm("clz  %0,%1" : "=r"(idx) : "r"(idx));
+  // return idx;
+  return __builtin_ctzll(x);
 }
 
 static void BM_ffsll(benchmark::State& state) {
