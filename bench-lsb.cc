@@ -12,7 +12,8 @@ constexpr int _size = 1000;
 std::vector<size_t> _data;
 
 static inline size_t test_ffsll(size_t x) {
-  return ffsll(x) - 1;
+  // gcc refuses to inline ffsll(), use builtin instead
+  return __builtin_ffsll(x) - 1;
 }
 
 // x != 0
