@@ -10,6 +10,7 @@
 #include <netinet/tcp.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <time.h>
 
 #include <atomic>
 #include <thread>
@@ -69,6 +70,14 @@ static ssize_t vio_write(int s, const char* buf, int size) {
   }
 }
 
+long ns_diff(const struct timespec *t2, const struct timespec *t1)
+{
+    long s, ns;
+    s = t2->tv_sec - t1->tv_sec;
+    ns = t2->tv_nsec - t1->tv_nsec;
+    return s * 1000000000LL + ns;
+}
+
 static void handler(int s) {
   fprintf(stderr, "server: new client(tid = %d), total=%d\n",
           int(gettid()), ++_s_count);
@@ -78,9 +87,17 @@ static void handler(int s) {
   memset(buf_recv, 0, _recv_size);
   memset(buf_send, 's', _send_size);
 
+  int count = 0;
+  long read_ns = 0, write_ns = 0;
+  struct timespec t1, t2;
+
   while (true) {
+    ++count;
     // get command
-    const ssize_t ret = vio_read(s, buf_recv, _recv_size);
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t1);
+    ssize_t ret = vio_read(s, buf_recv, _recv_size);
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t2);
+    read_ns += ns_diff(&t2, &t1);
     if (ret == -999) {
       fprintf(stderr, "server: client closed\n");
       break;
@@ -99,9 +116,20 @@ static void handler(int s) {
     // do some work
     workload();
     // send response
-    if (vio_write(s, buf_send, _send_size)) {
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t1);
+    ret = vio_write(s, buf_send, _send_size);
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t2);
+    if (ret) {
       fprintf(stderr, "server: write error\n");
       break;
+    }
+    write_ns += ns_diff(&t2, &t1);
+    // print statistics
+    if (count == 10000) {
+      printf("read: %.2f us, write: %.2f us\n",
+             double(read_ns)/count/1000.0, double(write_ns)/count/1000.0);
+      count = 0;
+      read_ns = write_ns = 0;
     }
   }
 
