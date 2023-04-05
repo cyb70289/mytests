@@ -10,6 +10,7 @@ rabin
 cputime
 mmap-write
 bench-lsb
+mov-w1-w1
 
 *.dSYM/
 
