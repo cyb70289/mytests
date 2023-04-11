@@ -1,5 +1,5 @@
 CPPFLAGS = -g -O2 -Wall -pthread
-CXXFLAGS = --std=c++17
+CXXFLAGS = -std=c++17
 
 .PHONY: all
 all: mydd

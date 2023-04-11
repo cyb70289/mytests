@@ -1,4 +1,5 @@
-// to evaluate nvme queue usage under direct-io and async-io
+// evaluate nvme queue usage under direct-io and async-io
+// g++ -std=c++17 -g -O2 -Wall -pthread mydd.cc -o mydd
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -9,6 +10,7 @@
 #include <linux/aio_abi.h>
 #include <sys/syscall.h>
 
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -60,6 +62,8 @@ static int io_getevents(aio_context_t ctx, long min_nr, long max_nr,
     return syscall(__NR_io_getevents, ctx, min_nr, max_nr, events, timeout);
 }
 
+// FIXME: last depth-1 IOs are lost!!!
+// Issue `depth` async IO, nvme driver only uses on queue for aio+dio
 static void evaluate_aio(int fd, int depth) {
     aio_context_t aio_ctx{};
     if (io_setup(depth, &aio_ctx)) {
@@ -100,12 +104,40 @@ static void evaluate_aio(int fd, int depth) {
     io_destroy(aio_ctx);
 }
 
+// write n different files (dio) in parallel
+// average queue size ~= n_files
+static void evaluate_files(int n_files) {
+    std::vector<std::thread> threads;
+    for (int i = 0; i < n_files; ++i) {
+        threads.emplace_back(
+            [n_files, idx = i] {
+                const std::string fn = "./__test__.bin" + std::to_string(idx);
+                int fd = open(fn.c_str(),
+                              O_CREAT | O_TRUNC | O_WRONLY | O_DIRECT, 0644);
+                if (fd < 0) { perror("open"); exit(1); }
+                unlink(fn.c_str());
+                for (int i = 0; i < block_count / n_files; ++i) {
+                    if (write(fd, iobuf, block_size) != block_size) {
+                        perror("pwrite");
+                        exit(1);
+                    }
+                }
+                close(fd);
+            }
+        );
+    }
+    for (int i = 0; i < n_files; ++i) {
+        threads[i].join();
+    }
+}
+
 int main(int argc, char *argv[]) {
     for (int i = 0; i < block_size; ++i) {
         iobuf[i] = char(i);
     }
 
     bool aio = false;
+    bool files = false;
     int depth = 1;
 
     if (argc >= 2) {
@@ -113,15 +145,24 @@ int main(int argc, char *argv[]) {
         if (depth <= 0) depth = 1;
         if (argc == 3 && strcasecmp(argv[2], "aio") == 0) {
             aio = true;
-            printf("AIO+DIO, queue depth = %d\n", depth);
+            printf("AIO+DIO: queue depth = %d\n", depth);
+        } else if (argc == 3 && strcasecmp(argv[2], "files") == 0) {
+            files = true;
+            printf("DIO: write %d different files in parallel\n", depth);
         } else {
-            printf("DIO, threads = %d\n", depth);
+            printf("DIO: threads = %d\n", depth);
         }
     } else {
         printf("Usage:\n");
         printf("  ./mydd 32             direct-io with 32 threads\n");
         printf("  ./mydd 16 aio         aio + dio, queue depth = 16\n");
+        printf("  ./mydd 16 files       write 16 different files\n");
         return 1;
+    }
+
+    if (files) {
+        evaluate_files(depth);
+        return 0;
     }
 
     int fd = open("./__test__.bin", O_CREAT | O_TRUNC | O_WRONLY | O_DIRECT,
