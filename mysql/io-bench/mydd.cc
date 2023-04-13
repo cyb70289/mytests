@@ -16,7 +16,7 @@
 
 const long block_size = 8 * 1024;
 const long block_count = 1024 * 1024;
-alignas(4096) char iobuf[block_size];
+alignas(block_size) char iobuf[block_size];
 
 /* Though each thread writes its own non-overlapped region, for direct-io,
  * nvme driver only uses one queue.
