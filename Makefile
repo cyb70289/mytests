@@ -10,7 +10,7 @@ all:
 clean:
 	rm -f read-le ascii 8way pagesize mt-print mt-cond order per-thread \
 	      rabin printf order2 callonce utf8-len ceph-hash c-conv cputime \
-	      mmap-write bench-lsb
+	      mmap-write bench-lsb bench-pmull
 
 ascii: ascii.c ascii.S
 	gcc ${CPPFLAGS} -o ascii $^
