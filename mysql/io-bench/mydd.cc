@@ -15,11 +15,12 @@
 #include <vector>
 
 const long block_size = 8 * 1024;
-const long block_count = 1024 * 1024;
+const long block_count = 512 * 1024;
 alignas(block_size) char iobuf[block_size];
 
 /* Though each thread writes its own non-overlapped region, for direct-io,
- * nvme driver only uses one queue.
+ * - ext4: doesn't scale due to global inode lock
+ * - xfs:  scale well for multiple writers to different blocks
  *
  * fd: |--------------|--------------|--------------|------------
  *     ^  thd0 write  ^  thd1 write  ^  thd2 write  ^ ....
@@ -63,7 +64,7 @@ static int io_getevents(aio_context_t ctx, long min_nr, long max_nr,
 }
 
 // FIXME: last depth-1 IOs are lost!!!
-// Issue `depth` async IO, nvme driver only uses on queue for aio+dio
+// Issue `depth` async IO
 static void evaluate_aio(int fd, int depth) {
     aio_context_t aio_ctx{};
     if (io_setup(depth, &aio_ctx)) {
@@ -83,7 +84,14 @@ static void evaluate_aio(int fd, int depth) {
     while (sent_blocks < block_count) {
         if (pending_io < depth && (sent_blocks + pending_io) < block_count) {
             // queue one io
+#if 0
             cb.aio_offset = sent_blocks * block_size;
+#else
+            const long sub_block_index = sent_blocks % depth;
+            const long sub_block_offset = sent_blocks / depth;
+            cb.aio_offset = (sub_block_index * block_count / depth +
+                             sub_block_offset) * block_size;
+#endif
             if (io_submit(aio_ctx, 1, cbs) != 1) {
                 perror("io_submit");
                 exit(1);
@@ -168,6 +176,7 @@ int main(int argc, char *argv[]) {
     int fd = open("./__test__.bin", O_CREAT | O_TRUNC | O_WRONLY | O_DIRECT,
                   0644);
     if (fd < 0) { perror("open"); return 1; }
+    unlink("./__test__.bin");
 
     if (aio) {
         evaluate_aio(fd, depth);
