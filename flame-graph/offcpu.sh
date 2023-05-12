@@ -9,7 +9,7 @@ nc -l -p 6789 > /tmp/offcpu-stack
 stat --printf="offcpu file size = %s\n" /tmp/offcpu-stack
 
 echo "generating svg..."
-~/work/FlameGraph/flamegraph.pl --color=io --countname=us < /tmp/offcpu-stack > /tmp/offcpu.svg
+~/work/FlameGraph/flamegraph.pl --title "Off CPU" --color=io --countname=us < /tmp/offcpu-stack > /tmp/offcpu.svg
 if [ $? != 0 ]; then
     echo "failed!"
     exit 1

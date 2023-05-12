@@ -9,11 +9,11 @@ nc -l -p 6789 > /tmp/perf-script
 stat --printf="perf script size = %s\n" /tmp/perf-script
 
 echo "generating svg..."
-~/work/FlameGraph/stackcollapse-perf.pl /tmp/perf-script | ~/work/FlameGraph/flamegraph.pl > /tmp/perf.svg
+~/work/FlameGraph/stackcollapse-perf.pl /tmp/perf-script | ~/work/FlameGraph/flamegraph.pl --title "On CPU" > /tmp/oncpu.svg
 if [ $? != 0 ]; then
     echo "failed!"
     exit 1
 fi
 
-echo "saved to /tmp/perf.svg"
-firefox /tmp/perf.svg > /dev/null 2>&1 &
+echo "saved to /tmp/oncpu.svg"
+firefox /tmp/oncpu.svg > /dev/null 2>&1 &
