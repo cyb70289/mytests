@@ -2,11 +2,12 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <unistd.h>
 
 #pragma GCC optimize ("align-functions=65536")
 
-constexpr int64_t N = 1 * 1024 * 1024 * 1024;
-constexpr int64_t L = 100 * 1000 * 1000;
+constexpr int64_t N = 256 * 1024;
+constexpr int64_t L = 256 * 1024;
 
 __attribute__((noinline))
 uint32_t get5(const int64_t* index, const uint8_t* data, int64_t i) {
@@ -46,14 +47,31 @@ int main() {
     index[i] = dist(mt);
   }
 
+//  std::cout << "pid = " << getpid() << ", press enter to continue\n";
+//  getchar();
+
+  constexpr int n = 2000;
+
   uint32_t s = 0;
-  const auto t1 = std::chrono::high_resolution_clock::now();
-  for (int64_t i = 0; i < L; ++i) {
-    s += get1(index.get(), data.get(), i);
+  auto t1 = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < n; ++i) {
+    for (int64_t i = 0; i < L; ++i) {
+      s += get2(index.get(), data.get(), i);
+    }
   }
-  const auto t2 = std::chrono::high_resolution_clock::now();
-  const std::chrono::duration<double> elapsed = t2 - t1;
-  std::cout << "read : " << elapsed.count() << " s\n";
+  auto t2 = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = t2 - t1;
+  std::cout << "w/o icache miss: " << elapsed.count() << " s\n";
+
+  t1 = std::chrono::high_resolution_clock::now();
+  for (int i = 0; i < n; ++i) {
+    for (int64_t i = 0; i < L; ++i) {
+      s += get1(index.get(), data.get(), i);
+    }
+  }
+  t2 = std::chrono::high_resolution_clock::now();
+  elapsed = t2 - t1;
+  std::cout << "w/  icache miss: " << elapsed.count() << " s\n";
 
   return int(s);
 }
