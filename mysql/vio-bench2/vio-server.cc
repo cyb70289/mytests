@@ -78,19 +78,18 @@ static void handler(int s) {
   // warm up
   for (int i = 0; i < 1000; ++i) {
     vio_read(s, buf_recv, _recv_size);
-    usleep(1000);
+    usleep(100);
     vio_write(s, buf_send, _send_size);
   }
 
-  constexpr int kCount = 5000;
+  constexpr int kCount = 50*1000;
   int loops = 0;
 
-  struct timespec ts;
-  clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+  struct timespec ts_all, ts_cpu;
+  clock_gettime(CLOCK_MONOTONIC, &ts_all);
+  clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts_cpu);
 
   while (true) {
-    struct timespec te;
-
     for (int i = 0; i < kCount; ++i) {
         // get command
         ssize_t ret = vio_read(s, buf_recv, _recv_size);
@@ -102,8 +101,6 @@ static void handler(int s) {
           fprintf(stderr, "server: read error\n");
           goto out;
         }
-        // short delay
-        usleep(1000*1000 / kCount);
         // send response
         ret = vio_write(s, buf_send, _send_size);
         if (ret) {
@@ -113,10 +110,14 @@ static void handler(int s) {
     }
 
     // print statistics
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &te);
-    const long time_ns = ns_diff(&te, &ts);
+    struct timespec te_all, te_cpu;
+    clock_gettime(CLOCK_MONOTONIC, &te_all);
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &te_cpu);
+    const long time_all = ns_diff(&te_all, &ts_all);
+    const long time_cpu = ns_diff(&te_cpu, &ts_cpu);
     ++loops;
-    printf("read+write: %.2f us\n", double(time_ns)/kCount/loops/1000.0);
+    printf("all:   %.2f us\n", double(time_all)/kCount/loops/1000.0);
+    printf("oncpu: %.2f us\n\n", double(time_cpu)/kCount/loops/1000.0);
   }
 
 out:

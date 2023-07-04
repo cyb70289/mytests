@@ -19,12 +19,12 @@ static bool _error_flag = false;
 // return 0 on success, -1 on error
 static ssize_t vio_read(int s, char* buf, int size) {
   while (true) {
-    ssize_t ret = recv(s, buf, size, 0);
+    ssize_t ret = recv(s, buf, size, MSG_DONTWAIT);
     if (ret == size) return 0;;
     if (ret == 0) return -1;    // peer closed
     if (ret > 0) { buf += ret, size -= ret; continue; }
-    if (errno == EINTR) continue;
-    return -1;
+    if (errno == EINTR || errno == EAGAIN) continue;
+    if (ret) return -1;
   }
 }
 
@@ -34,7 +34,7 @@ static ssize_t vio_write(int s, const char* buf, int size) {
     ssize_t ret = send(s, buf, size, MSG_DONTWAIT);
     if (ret == size) return 0;
     if (ret >= 0) { buf += ret; size -= ret; continue; }
-    if (errno == EINTR) continue;
+    if (errno == EINTR || errno == EAGAIN) continue;
     if (ret) return -1;
   }
 }
