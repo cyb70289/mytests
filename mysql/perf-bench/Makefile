@@ -4,11 +4,10 @@ CPPFLAGS = -g -O2 -Wall -pthread
 CXXFLAGS = -std=c++17
 
 .PHONY: all
-all: map map2 map3
+all: chrono-overhead papi-overhead
 
-map3: LDLIBS = -lpapi
-map4: LDLIBS = -lpapi
+papi-overhead: LDLIBS = -lpapi
 
 .PHONY: clean
 clean:
-	rm -rf map map2 map3
+	rm -rf chrono-overhead papi-overhead
