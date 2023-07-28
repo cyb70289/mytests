@@ -1,34 +1,38 @@
 #pragma GCC push_options
 #pragma GCC optimize ("align-functions=1024")
 
-void dummy1();
-void dummy2();
-void dummy3();
-void dummy4();
-void dummy5();
-void dummy6();
-void dummy7();
-void dummy8();
+#define NOP   __asm__ __volatile("nop" : : : "memory")
+#define NOP8  NOP; NOP; NOP; NOP; NOP; NOP; NOP; NOP
+#define NOP64 NOP8; NOP8; NOP8; NOP8; NOP8; NOP8; NOP8; NOP8
 
-volatile unsigned  _v = 7;
+// do a dummy store/load in the function body to make sure the code
+// is different for each "n", otherwise compiler will combine the nop block
+volatile int _d[8];
+#define dummy(n)   \
+do {               \
+    int t = _d[n]; \
+    NOP64;         \
+    _d[n] = t;     \
+} while (0)
 
 // define function: void f000(), ..., void f799()
-// function bodies must be different, otherwise compiler will merg them
-#define F1(a,b,c)                    \
-volatile int _u ## a ## b ## c;      \
-void f ## a ## b ## c() {            \
-    _u ## a ## b ## c = 1;           \
-                                     \
-    const unsigned v = _v;           \
-                                     \
-    if (v <= 0) dummy1();            \
-    else if (v <= 1) dummy2();       \
-    else if (v <= 2) dummy3();       \
-    else if (v <= 3) dummy4();       \
-    else if (v <= 4) dummy5();       \
-    else if (v <= 5) dummy6();       \
-    else if (v <= 6) dummy7();       \
-    else if (v <= 7) dummy8();       \
+// assign a dummy variable in each function to make sure the functions
+// are different, otherwise compiler will merg them to one function
+volatile int  _v = 7;
+#define F1(a,b,c)               \
+volatile int _u ## a ## b ## c; \
+void f ## a ## b ## c() {       \
+    _u ## a ## b ## c = 1;      \
+                                \
+    const int v = _v;           \
+    if (v <= 0) dummy(0);       \
+    else if (v <= 1) dummy(1);  \
+    else if (v <= 2) dummy(2);  \
+    else if (v <= 3) dummy(3);  \
+    else if (v <= 4) dummy(4);  \
+    else if (v <= 5) dummy(5);  \
+    else if (v <= 6) dummy(6);  \
+    else if (v <= 7) dummy(7);  \
 }
 
 // define 10 funcs: fab0, ..., fab9
