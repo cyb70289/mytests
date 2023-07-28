@@ -3,7 +3,7 @@ CFLAGS = -O2 -Wall
 
 ARCH=$(shell uname -m)
 
-workload-$(ARCH): main.c rand.c funcs.c
+workload-$(ARCH): main.c funcs.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 .PHONY: clean
