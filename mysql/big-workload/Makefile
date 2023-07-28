@@ -1,5 +1,5 @@
 CC = gcc-10
-CFLAGS = -g -O2 -Wall
+CFLAGS = -O2 -Wall
 
 ARCH=$(shell uname -m)
 

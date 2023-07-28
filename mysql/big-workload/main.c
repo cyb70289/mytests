@@ -62,7 +62,7 @@ F3(7)
     CALL_F2(a,5);
 
 int main() {
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         CALL_F3(5);
         CALL_F3(0);
         CALL_F3(3);
