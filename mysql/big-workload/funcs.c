@@ -15,24 +15,23 @@ do {               \
     _d[n] = t;     \
 } while (0)
 
+extern const int (*_rand)[10][10];
+
 // define function: void f000(), ..., void f799()
 // assign a dummy variable in each function to make sure the functions
 // are different, otherwise compiler will merg them to one function
-volatile int  _v = 7;
-#define F1(a,b,c)               \
-volatile int _u ## a ## b ## c; \
-void f ## a ## b ## c() {       \
-    _u ## a ## b ## c = 1;      \
-                                \
-    const int v = _v;           \
-    if (v <= 0) dummy(0);       \
-    else if (v <= 1) dummy(1);  \
-    else if (v <= 2) dummy(2);  \
-    else if (v <= 3) dummy(3);  \
-    else if (v <= 4) dummy(4);  \
-    else if (v <= 5) dummy(5);  \
-    else if (v <= 6) dummy(6);  \
-    else if (v <= 7) dummy(7);  \
+#define F1(a,b,c)                 \
+volatile int _u ## a ## b ## c;   \
+void f ## a ## b ## c() {         \
+    const int v = _rand[a][b][c]; \
+    if (v <= 0) dummy(0);         \
+    else if (v <= 1) dummy(1);    \
+    else if (v <= 2) dummy(2);    \
+    else if (v <= 3) dummy(3);    \
+    else if (v <= 4) dummy(4);    \
+    else if (v <= 5) dummy(5);    \
+    else if (v <= 6) dummy(6);    \
+    else if (v <= 7) dummy(7);    \
 }
 
 // define 10 funcs: fab0, ..., fab9
