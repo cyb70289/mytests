@@ -18,7 +18,7 @@ do {               \
 // define function: void f000(), ..., void f799()
 // assign a dummy variable in each function to make sure the functions
 // are different, otherwise compiler will merg them to one function
-volatile int  _v = 7;
+volatile int  _v = 4;
 #define F1(a,b,c)               \
 volatile int _u ## a ## b ## c; \
 void f ## a ## b ## c() {       \
