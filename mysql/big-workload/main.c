@@ -62,7 +62,14 @@ F3(7)
     CALL_F2(a,1);
 
 int main() {
+#ifdef SMALL_WORKLOAD
+    for (int i = 0; i < 100000; ++i) {
+        // 10 functions
+        CALL_F2(0, 0);
+    }
+#else
     for (int i = 0; i < 1000; ++i) {
+        // 800 functions
         CALL_F3(4);
         CALL_F3(1);
         CALL_F3(6);
@@ -72,5 +79,6 @@ int main() {
         CALL_F3(2);
         CALL_F3(5);
     }
+#endif
     return 0;
 }
