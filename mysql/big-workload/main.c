@@ -37,40 +37,40 @@ F3(7)
 
 // fab0(); ...; fab9();
 #define CALL_F2(a,b) \
-    CALL_F1(a,b,0);  \
-    CALL_F1(a,b,1);  \
     CALL_F1(a,b,2);  \
-    CALL_F1(a,b,3);  \
-    CALL_F1(a,b,4);  \
-    CALL_F1(a,b,5);  \
-    CALL_F1(a,b,6);  \
-    CALL_F1(a,b,7);  \
     CALL_F1(a,b,8);  \
-    CALL_F1(a,b,9);
+    CALL_F1(a,b,5);  \
+    CALL_F1(a,b,7);  \
+    CALL_F1(a,b,3);  \
+    CALL_F1(a,b,1);  \
+    CALL_F1(a,b,0);  \
+    CALL_F1(a,b,9);  \
+    CALL_F1(a,b,4);  \
+    CALL_F1(a,b,6);  \
 
 // fa00(); ...; fa99();
 #define CALL_F3(a) \
-    CALL_F2(a,0);  \
-    CALL_F2(a,1);  \
+    CALL_F2(a,6);  \
     CALL_F2(a,2);  \
+    CALL_F2(a,9);  \
     CALL_F2(a,3);  \
     CALL_F2(a,4);  \
+    CALL_F2(a,0);  \
     CALL_F2(a,5);  \
-    CALL_F2(a,6);  \
     CALL_F2(a,7);  \
     CALL_F2(a,8);  \
-    CALL_F2(a,9);
+    CALL_F2(a,1);
 
 int main() {
     for (int i = 0; i < 1000; ++i) {
-        CALL_F3(0);
-        CALL_F3(1);
-        CALL_F3(2);
-        CALL_F3(3);
         CALL_F3(4);
-        CALL_F3(5);
+        CALL_F3(1);
         CALL_F3(6);
+        CALL_F3(3);
+        CALL_F3(0);
         CALL_F3(7);
+        CALL_F3(2);
+        CALL_F3(5);
     }
     return 0;
 }

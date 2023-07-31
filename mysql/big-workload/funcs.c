@@ -1,38 +1,27 @@
 #pragma GCC push_options
 #pragma GCC optimize ("align-functions=1024")
 
-#define NOP   __asm__ __volatile("nop" : : : "memory")
-#define NOP8  NOP; NOP; NOP; NOP; NOP; NOP; NOP; NOP
-#define NOP64 NOP8; NOP8; NOP8; NOP8; NOP8; NOP8; NOP8; NOP8
-
-// do a dummy store/load in the function body to make sure the code
-// is different for each "n", otherwise compiler will combine the nop block
-volatile int _d[8];
-#define dummy(n)   \
-do {               \
-    int t = _d[n]; \
-    NOP64;         \
-    _d[n] = t;     \
-} while (0)
+volatile unsigned long _v = 0x1122334455667788;
+volatile unsigned long _u = 0;
 
 // define function: void f000(), ..., void f799()
 // assign a dummy variable in each function to make sure the functions
 // are different, otherwise compiler will merg them to one function
-volatile int  _v = 4;
-#define F1(a,b,c)               \
-volatile int _u ## a ## b ## c; \
-void f ## a ## b ## c() {       \
-    _u ## a ## b ## c = 1;      \
-                                \
-    const int v = _v;           \
-    if (v <= 0) dummy(0);       \
-    else if (v <= 1) dummy(1);  \
-    else if (v <= 2) dummy(2);  \
-    else if (v <= 3) dummy(3);  \
-    else if (v <= 4) dummy(4);  \
-    else if (v <= 5) dummy(5);  \
-    else if (v <= 6) dummy(6);  \
-    else if (v <= 7) dummy(7);  \
+#define F1(a,b,c)                                    \
+volatile int _u ## a ## b ## c;                      \
+void f ## a ## b ## c() {                            \
+    _u ## a ## b ## c = 1;                           \
+                                                     \
+    const unsigned long v = _v;                      \
+    const unsigned u0 = 1ULL << ((v >> 56) & 63ULL); \
+    const unsigned u1 = 1ULL << ((v >> 48) & 63ULL); \
+    const unsigned u2 = 1ULL << ((v >> 40) & 63ULL); \
+    const unsigned u3 = 1ULL << ((v >> 32) & 63ULL); \
+    const unsigned u4 = 1ULL << ((v >> 24) & 63ULL); \
+    const unsigned u5 = 1ULL << ((v >> 16) & 63ULL); \
+    const unsigned u6 = 1ULL << ((v >>  8) & 63ULL); \
+    const unsigned u7 = 1ULL << ((v >>  0) & 63ULL); \
+    _u = u0 | u1 | u2 | u3 | u4 | u5 | u6 |u7;       \
 }
 
 // define 10 funcs: fab0, ..., fab9
