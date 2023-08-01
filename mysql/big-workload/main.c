@@ -1,3 +1,4 @@
+// declare functions void f000(), ..., void f799()
 #define F1(a,b,c) void f ## a ## b ## c(void);
 
 #define F2(a,b) \
@@ -33,9 +34,10 @@ F3(5)
 F3(6)
 F3(7)
 
+// call functions f000(), ..., f799()
 #define CALL_F1(a,b,c) f ## a ## b ## c();
 
-// fab0(); ...; fab9();
+// fab0(), ..., fab9()
 #define CALL_F2(a,b) \
     CALL_F1(a,b,2);  \
     CALL_F1(a,b,8);  \
@@ -46,9 +48,9 @@ F3(7)
     CALL_F1(a,b,0);  \
     CALL_F1(a,b,9);  \
     CALL_F1(a,b,4);  \
-    CALL_F1(a,b,6);  \
+    CALL_F1(a,b,6);
 
-// fa00(); ...; fa99();
+// fa00(), ..., fa99()
 #define CALL_F3(a) \
     CALL_F2(a,6);  \
     CALL_F2(a,2);  \

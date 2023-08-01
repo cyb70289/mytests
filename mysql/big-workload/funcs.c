@@ -7,6 +7,13 @@ volatile unsigned long _u = 0;
 // define function: void f000(), ..., void f799()
 // assign a dummy variable in each function to make sure the functions
 // are different, otherwise compiler will merg them to one function
+//
+// IPC of big workload vs. small workload
+// - caslake:     0.84, 2.21
+// - milan:       1.57, 2.98
+// - neoverse-n1: 0.41, 2.73
+// - neoverse-n2: 1.13, 3.44
+// - neoverse-v1: 1.07, 4.06
 #define F1(a,b,c)                                    \
 volatile int _u ## a ## b ## c;                      \
 void f ## a ## b ## c() {                            \
