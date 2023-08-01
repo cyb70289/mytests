@@ -1,4 +1,2 @@
-small-aarch64
-small-x86_64
-big-aarch64
-big-x86_64
+*-ipc-*-workload-aarch64
+*-ipc-*-workload-x86_64
