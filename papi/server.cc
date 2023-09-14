@@ -80,7 +80,11 @@ int main() {
   if (PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) abort();
   if (PAPI_set_domain(PAPI_DOM_ALL) != PAPI_OK) abort();
   if (PAPI_create_eventset(&EventSet) != PAPI_OK) abort();
+#ifdef __aarch64__
+  if (PAPI_add_named_event(EventSet, "INST_RETIRED") != PAPI_OK) abort();
+#else
   if (PAPI_add_event(EventSet, PAPI_TOT_INS) != PAPI_OK) abort();
+#endif
 
   while (true) {
     int sa_len = sizeof(sa);
