@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include <papi.h>
+#include "papi.h"
 
 // return 0 on success, -1 on error
 static ssize_t vio_write(int s, const char* buf, int size) {
@@ -46,31 +46,28 @@ int main(int argc, char* argv[]) {
   const int y = 1;
   if (setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &y, sizeof(y))) abort();
 
-  long long insts = 0;
-  int EventSet = PAPI_NULL;
-  if (PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) abort();
-  if (PAPI_set_domain(PAPI_DOM_ALL) != PAPI_OK) abort();
-  if (PAPI_create_eventset(&EventSet) != PAPI_OK) abort();
 #ifdef __aarch64__
-  if (PAPI_add_named_event(EventSet, "INST_RETIRED") != PAPI_OK) abort();
+  papi papi("INST_RETIRED", "CPU_CYCLES");
 #else
-  if (PAPI_add_event(EventSet, PAPI_TOT_INS) != PAPI_OK) abort();
+  papi papi(PAPI_TOT_INS, PAPI_TOT_CYC);
 #endif
 
   char buf_send[64];
   memset(buf_send, 'c', 64);
   while (true) {
-    if (PAPI_start(EventSet) != PAPI_OK) abort();
-    for (int i = 0; i < 1000; ++i) {
+    papi.start();
+    constexpr int loops = 1000;
+    for (int i = 0; i < loops; ++i) {
       if (vio_write(s, buf_send, 64)) {
         fprintf(stderr, "client: error\n");
         abort();
       }
       usleep(100);
     }
-    if (PAPI_stop(EventSet, &insts) != PAPI_OK) abort();
-    printf("vio_write insts = %lld\n", insts / 1000);
-    insts = 0;
+    long insts, cycles;
+    papi.stop(&insts, &cycles);
+    printf("vio_write: insts = %ld, cycles= %ld, IPC = %.2f\n",
+            insts / loops, cycles / loops, (double)insts / cycles);
   }
 
   return 0;

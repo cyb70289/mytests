@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 
-#include <papi.h>
+#include "papi.h"
 
 // return 0 on success, -1 on error ot timeout
 #ifdef WITH_EPOLL
@@ -75,15 +75,10 @@ int main() {
 
   if (listen(s, 5) < 0) abort();
 
-  long long insts = 0;
-  int EventSet = PAPI_NULL;
-  if (PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) abort();
-  if (PAPI_set_domain(PAPI_DOM_ALL) != PAPI_OK) abort();
-  if (PAPI_create_eventset(&EventSet) != PAPI_OK) abort();
 #ifdef __aarch64__
-  if (PAPI_add_named_event(EventSet, "INST_RETIRED") != PAPI_OK) abort();
+  papi papi("INST_RETIRED", "CPU_CYCLES");
 #else
-  if (PAPI_add_event(EventSet, PAPI_TOT_INS) != PAPI_OK) abort();
+  papi papi(PAPI_TOT_INS, PAPI_TOT_CYC);
 #endif
 
   while (true) {
@@ -110,9 +105,10 @@ int main() {
     char buf_recv[64];
     bool ok = true;
     while (ok) {
+      constexpr int loops = 1000;
       memset(buf_recv, 0, 64);
-      if (PAPI_start(EventSet) != PAPI_OK) abort();
-      for (int i = 0; i < 1000; ++i) {
+      papi.start();
+      for (int i = 0; i < loops; ++i) {
         ssize_t ret = vio_read(s2, pollfd, buf_recv, 64);
         if (ret) {
           fprintf(stderr, "server: error\n");
@@ -120,10 +116,11 @@ int main() {
           break;
         }
       }
-      if (PAPI_stop(EventSet, &insts) != PAPI_OK) abort();
+      long insts, cycles;
+      papi.stop(&insts, &cycles);
       if (ok) {
-        printf("vio_read insts = %lld\n", insts / 1000);
-        insts = 0;
+        printf("vio_read: insts = %ld, cycles= %ld, IPC = %.2f\n",
+                insts / loops, cycles / loops, (double)insts / cycles);
         for (int i = 0; i < 64; ++i) {
           if (buf_recv[i] != 'c') abort();
         }
