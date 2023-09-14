@@ -8,10 +8,22 @@
 #include <netinet/tcp.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/epoll.h>
 
 #include <papi.h>
 
 // return 0 on success, -1 on error ot timeout
+#ifdef WITH_EPOLL
+static int vio_wait(int epollfd) {
+  while (true) {
+    struct epoll_event event;
+    const int ret = epoll_wait(epollfd, &event, 1, -1);
+    if (ret > 0) return 0;      // ready
+    if (ret == -1 && errno == EINTR) continue;
+    return -1;  // error or timeout
+  }
+}
+#else
 static int vio_wait(int s) {
   struct pollfd pfd{};
   pfd.fd = s;
@@ -19,14 +31,15 @@ static int vio_wait(int s) {
 
   while (true) {
     const int ret = poll(&pfd, 1, -1);
-    if (ret > 0) return 0;      // ready to send/recv
+    if (ret > 0) return 0;      // ready
     if (ret == -1 && errno == EINTR) continue;
     return -1;  // error or timeout
   }
 }
+#endif
 
 // return 0 on success, -999 if peer closed, -1 on error
-static ssize_t vio_read(int s, char* buf, int size) {
+static ssize_t vio_read(int s, int pollfd, char* buf, int size) {
   while (true) {
     const ssize_t ret = recv(s, buf, size, MSG_DONTWAIT);
     if (ret == size) return 0;;
@@ -34,11 +47,17 @@ static ssize_t vio_read(int s, char* buf, int size) {
     if (ret > 0) { buf += ret, size -= ret; continue; }
     if (errno == EINTR) continue;
     if (errno != EAGAIN) return -1;
-    if (vio_wait(s)) return -1;
+    if (vio_wait(pollfd)) return -1;
   }
 }
 
 int main() {
+#ifdef WITH_EPOLL
+  printf("!!!! epoll !!!!\n");
+#else
+  printf("!!!! poll !!!!\n");
+#endif
+
   int s = socket(AF_INET, SOCK_STREAM, 0);
   if (s == -1) abort();
 
@@ -74,13 +93,23 @@ int main() {
     const int yes = 1;
     if (setsockopt(s2, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes))) abort();
 
+    int pollfd = s2;
+#ifdef WITH_EPOLL
+    int epollfd = epoll_create1(0);
+    struct epoll_event ev{};
+    ev.events = EPOLLIN;
+    ev.data.fd = s2;
+    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, s2, &ev) == -1) abort();
+    pollfd = epollfd;
+#endif
+
     char buf_recv[64];
     bool ok = true;
     while (ok) {
       memset(buf_recv, 0, 64);
       if (PAPI_start(EventSet) != PAPI_OK) abort();
       for (int i = 0; i < 1000; ++i) {
-        ssize_t ret = vio_read(s2, buf_recv, 64);
+        ssize_t ret = vio_read(s2, pollfd, buf_recv, 64);
         if (ret) {
           fprintf(stderr, "server: error\n");
           ok = false;
@@ -98,6 +127,9 @@ int main() {
     }
 
     close(s2);
+#ifdef WITH_EPOLL
+    close(epollfd);
+#endif
   }
 
   return 0;

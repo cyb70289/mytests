@@ -6,6 +6,9 @@ LDLIBS := -lpapi
 .PHONY: all
 all: server client
 
+epoll: CPPFLAGS += -DWITH_EPOLL
+epoll: all
+
 .PHONY: clean
 clean:
 	rm -f server client
