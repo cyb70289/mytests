@@ -9,8 +9,16 @@
 #include <sys/socket.h>
 
 #include "papi.h"
+#ifdef WITH_URING
+#include "uring.h"
+#endif
 
 // return 0 on success, -1 on error
+#ifdef WITH_URING
+static ssize_t vio_write(uring* uring, const char* buf, int size) {
+  return uring->send(buf, size) ? 0 : -1;
+}
+#else
 static ssize_t vio_write(int s, const char* buf, int size) {
   while (true) {
     ssize_t ret = send(s, buf, size, MSG_DONTWAIT);
@@ -20,6 +28,7 @@ static ssize_t vio_write(int s, const char* buf, int size) {
     if (ret) return -1;
   }
 }
+#endif
 
 int main(int argc, char* argv[]) {
   const char* server_ip = "127.0.0.1";
@@ -46,6 +55,10 @@ int main(int argc, char* argv[]) {
   const int y = 1;
   if (setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &y, sizeof(y))) abort();
 
+#ifdef WITH_URING
+  uring uring(s);
+#endif
+
 #ifdef __aarch64__
   papi papi("INST_RETIRED", "CPU_CYCLES");
 #else
@@ -58,7 +71,11 @@ int main(int argc, char* argv[]) {
     papi.start();
     constexpr int loops = 1000;
     for (int i = 0; i < loops; ++i) {
+#ifdef WITH_URING
+      if (vio_write(&uring, buf_send, 64)) {
+#else
       if (vio_write(s, buf_send, 64)) {
+#endif
         fprintf(stderr, "client: error\n");
         abort();
       }
