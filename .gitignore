@@ -13,6 +13,7 @@ bench-lsb
 mov-w1-w1
 bench-pmull
 affinity
+detect-sigill
 
 *.dSYM/
 
