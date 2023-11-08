@@ -21,7 +21,7 @@ static ssize_t vio_write(uring* uring, const char* buf, int size) {
 #else
 static ssize_t vio_write(int s, const char* buf, int size) {
   while (true) {
-    ssize_t ret = send(s, buf, size, MSG_DONTWAIT);
+    ssize_t ret = send(s, buf, size, 0);
     if (ret == size) return 0;
     if (ret >= 0) { buf += ret; size -= ret; continue; }
     if (errno == EINTR) continue;
