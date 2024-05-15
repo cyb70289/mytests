@@ -1,0 +1,13 @@
+download dependencies
+=====================
+wget https://repo1.maven.org/maven2/net/openhft/affinity/3.23.3/affinity-3.23.3.jar
+
+
+compile
+=======
+javac -cp "./*:." ThreadSwitchTestAli.java
+
+
+run
+===
+java -verbose -cp "./*:." -Dthread.switch.test.warmup.iter=1234567 -Dthread.switch.test.run.iter=1234567 ThreadSwitchTestAli 7 1 abc
