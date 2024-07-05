@@ -16,3 +16,18 @@ void my_reorder(const void *in, void *out) {
         }
     }
 }
+
+// return ((vector - 31) ^ 29) - 29
+uint8x16_t f2(uint8x16_t vector) {
+  __asm__ __volatile__(
+    "movi    v1.16b, #31\n\t"
+    "movi    v2.16b, #29\n\t"
+    "sub     %[vector].16b, %[vector].16b, v1.16b\n\t"
+    "eor     %[vector].16b, %[vector].16b, v2.16b\n\t"
+    "sub     %[vector].16b, %[vector].16b, v2.16b"
+    : [vector] "=w" (vector)
+    :
+    : "v1", "v2"
+  );
+  return vector;
+}
