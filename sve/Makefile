@@ -1,6 +1,5 @@
-CPPFLAGS += -O3 -march=armv8.5-a+sve2 -msve-vector-bits=128
+CPPFLAGS += -O3 -march=armv8-a+sve2 -msve-vector-bits=128
 
-svmatch:
-
+.PHONY: clean
 clean:
-	rm -f svmatch
+	rm -f svmatch locate-token
