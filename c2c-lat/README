@@ -1,0 +1,23 @@
+build
+=====
+install libnuma-dev
+
+
+shared variable in 1G hugetlb
+=============================
+the purpose is to make the physical address (HN-F) of shared variable persistent
+
+allocate 1G hugepage
+--------------------
+static: add kernel command line "hugepagesz=1G hugepages=1"
+dynamic: echo 1 | sudo tee /sys/devices/system/node/node0/hugepages/hugepages-1048576kB/nr_hugepages
+
+mount 1G hugepage
+-----------------
+mkdir -p hugetlb
+sudo mount -t hugetlbfs nodev -o uid=$(id -u),gid=$(id -g),pagesize=1G ./hugetlb
+
+test with 1G hugepage
+---------------------
+./c2c-lat --hugetlbfs ./hugetlb --offset nnn ...
+
