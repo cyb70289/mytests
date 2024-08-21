@@ -31,3 +31,27 @@ uint8x16_t f2(uint8x16_t vector) {
   );
   return vector;
 }
+
+// static constexpr uint8_t tbl[33] = {
+//   5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3,
+//   3, 3, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1,
+//   1
+// };
+// return tbl[i];
+uint32_t f3(uint32_t i) {
+  uint32_t ret;
+  __asm__ __volatile__(
+    "adr     x1, 1f\n\t"
+    "b       2f\n\t"
+    "1:\n\t"
+    ".byte   5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3\n\t"
+    ".byte   3, 3, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1\n\t"
+    ".byte   1, 0, 0, 0\n\t"
+    "2:\n\t"
+    "ldrb    %w[ret], [x1, %[i]]"
+    : [ret] "=r" (ret)
+    : [i] "r" (i)
+    : "x1"
+  );
+  return ret;
+}
