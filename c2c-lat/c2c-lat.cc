@@ -5,7 +5,6 @@
 #include <cstring>
 #include <atomic>
 #include <iostream>
-#include <new>
 #include <string>
 #include <thread>
 
@@ -142,7 +141,7 @@ int main(int argc, char* argv[]) {
   const struct option long_opts[] = {
     {"help", no_argument, nullptr, 'h'},
     {"peer-cpu", required_argument, nullptr, 'p'},
-    {"hugetlbfs", required_argument, nullptr, 't'}, 
+    {"hugetlbfs", required_argument, nullptr, 't'},
     {"offset", required_argument, nullptr, 'o'},
     {nullptr, no_argument, nullptr, 0},
   };
