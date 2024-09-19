@@ -12,6 +12,7 @@ endif
 SRCS := test.c qspinlock.c
 HDRS := $(shell find . -name "*.h" -printf "%P\n")
 
+.PHONY: all
 all: test-lse test-llsc
 
 test-lse: $(SRCS) $(HDRS)
@@ -20,5 +21,16 @@ test-lse: $(SRCS) $(HDRS)
 test-llsc: $(SRCS) $(HDRS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $(SRCS)
 
+.PHONY: bench
+bench: bench-spinlock bench-qspinlock
+
+bench-spinlock: bench.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -march=armv8-a+lse -o $@ $^
+
+bench-qspinlock: bench.c qspinlock.c $(HDRS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DBENCH_QSPINLOCK -DCONFIG_ARM64_LSE_ATOMICS \
+	    -o $@ bench.c qspinlock.c
+
+.PHONY: clean
 clean:
-	rm -f test-lse test-llsc
+	rm -f test-lse test-llsc bench-spinlock bench-qspinlock

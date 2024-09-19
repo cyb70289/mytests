@@ -425,6 +425,12 @@ queue:
 		next = smp_cond_load_relaxed(&node->next, (VAL));
 
 	arch_mcs_spin_unlock_contended(&next->locked);
+	/*
+         * XXX: uncomment below code line to clear node->next after get lock,
+	 * it prevents misleading info, eg, multiple links to same node
+	 *
+	 * WRITE_ONCE(node->next, NULL);
+	 */
 
 release:
 	/*
