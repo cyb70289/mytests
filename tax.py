@@ -1,13 +1,41 @@
 import datetime
 import sys
 
+# TODO: changes per salary slit "Employee Deduction"
+_housing_insurance_2024_1_7 = 2558.00 + 1827.00 + 2923.92 + 182.75 + 730.98
+_housing_insurance_2024_8_12 = 2610.00 + 1865.00 + 2983.44 + 186.47 + 745.86
 
-# highest housing + insurances, shanghai,  adjusted at middle of year
-top_housing_insurance = (
-        #Year Jan~Jun, Jul~Dec
-        (2021, 6303.90, 6978.60),
-        (2022, 6978.60, 7691.74)
-)
+_housing_insurance = {
+    2024: (
+        _housing_insurance_2024_1_7,
+        _housing_insurance_2024_1_7,
+        _housing_insurance_2024_1_7,
+        _housing_insurance_2024_1_7,
+        _housing_insurance_2024_1_7,
+        _housing_insurance_2024_1_7,
+        _housing_insurance_2024_1_7,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+    ),
+    # XXX: will increase after Jun
+    2025: (
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+        _housing_insurance_2024_8_12,
+    ),
+}
 
 # lowest income per month to pay tax, 2022
 tax_lowest = 5000
@@ -35,7 +63,7 @@ def income_tax(income):
         raise Exception("wtf")
 
 
-# tax rate per bonus / 12, valid till 2023 end of year
+# tax rate per bonus / 12
 def beneficial_tax(bonus):
     tax_table = (
             #(upper,       rate,  deduction),
@@ -90,49 +118,36 @@ def get_inputs():
                 year = int(sys.argv[1])
             except:
                 pass
-        for x in top_housing_insurance:
-            if x[0] == year:
-                housing_insurance = list(x[1:])
-                break
-        else:
-            housing_insurance = list(top_housing_insurance[-1, 1:])
-        v = housing_insurance[0]
-        housing_insurance[0] = \
-                get_float('housing + insurance, Jan ~ Jun ({:.02f}): '.format(v), v)
-        v = housing_insurance[1]
-        housing_insurance[1] = \
-                get_float('housing + insurance, Jul ~ Dec ({:.02f}): '.format(v), v)
-        return housing_insurance
+        if year not in _housing_insurance:
+            raise Exception('invalid year, only support 2024+')
+        return _housing_insurance[year]
 
-    salary = get_float('salary per month: ')
-    allowance = get_float('allowance per month (1500): ', 1500)
+    salary = get_float('月工资 Actual Base Salary: ')
+    allowance = get_float('月补贴 Allowance (1500): ', 1500)
     housing_insurance = get_housing_insurance()
-    deduction = \
-        get_float('child, housing loan, elderly support deductions(0): ', 0)
+    deduction = get_float('月专项扣除总计，看一月工资单 (0): ', 0)
 
     bonus={}
     while True:
-        month = get_month('bonus month ([enter] if done): ')
+        month = get_month('奖金月份 (没有了就直接按回车): ')
         if month is None: break
-        bonus[month] = get_float('  amount: ')
+        bonus[month] = get_float('  金额: ')
 
     beneficial_month = None
     if bonus:
         while beneficial_month is None:
-            beneficial_month = \
-                get_month('beneficial month ([enter] to ignore): ')
+            beneficial_month = get_month('税优月份: ')
             if beneficial_month is None:
-                beneficial_month = -1
-                break
+                continue
             elif beneficial_month not in bonus:
                 beneficial_month = None
-                print('-- beneficial month not in bonus monthes, try again')
+                print('-- 税优月份必须在奖金月份中，重试')
 
     cash_reward = {i:0 for i in range(1, 13)}
     while True:
-        month = get_month('cash reward month ([enter] if done): ')
+        month = get_month('现金奖励月份 (没有了就直接按回车): ')
         if month is None: break
-        cash_reward[month] = get_float('  amount: ')
+        cash_reward[month] = get_float('  金额: ')
 
     return salary+allowance, housing_insurance, deduction+tax_lowest, \
            bonus, beneficial_month, cash_reward
@@ -151,7 +166,7 @@ total_income, total_tax = 0.0, 0.0
 for month in range(1, 13):
     debug('========== month {} =========='.format(month))
     income_this_month = income_per_month + cash_reward[month] \
-                        - housing_insurance[month >= 7] - total_deduction
+                        - housing_insurance[month-1] - total_deduction
     debug('income before tax: {:.02f}'.format(income_this_month))
     net_beneficial_bonus, beneficial_bonus_tax = 0.0, 0.0
     if month in bonus:
@@ -175,7 +190,7 @@ for month in range(1, 13):
           net_month_income[month], month_tax[month]))
 
 total_net_pay, total_tax = 0.0, 0.0
-print('month\tnet pay\t\ttax')
+print('月份\t税后收入\t缴税')
 for month in range(1, 13):
     print('{}:\t{:.02f}\t{:.02f}'.format(
           month, net_month_income[month], month_tax[month]))
