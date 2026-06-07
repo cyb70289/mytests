@@ -56,6 +56,14 @@ main {
   margin: 0 0 1rem;
 }
 
+#turn {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+#turn.tx { color: #2c5fa8; }
+#turn.to { color: #c0463a; }
+
 .control {
   display: flex;
   align-items: center;
@@ -93,33 +101,6 @@ select:disabled {
   background: #eee;
   color: #888;
   cursor: not-allowed;
-}
-
-/* --- status line --- */
-.status {
-  text-align: center;
-  font-size: 1.1rem;
-  font-weight: 500;
-  padding: 0.6rem;
-  margin: 0 0 1rem;
-  background: #eef3fb;
-  border-radius: 8px;
-  min-height: 2.6rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.status.win  { background: #e6f6e6; color: #1a6b1a; }
-.status.loss { background: #fde6e6; color: #8a1a1a; }
-.status.draw { background: #f3f3f3; color: #444; }
-
-.status.clickable {
-  cursor: pointer;
-  color: #2c5fa8;
-}
-.status.clickable:hover {
-  background: #d8e6f7;
 }
 
 /* --- board --- */
@@ -180,11 +161,6 @@ select:disabled {
 .cell.last-move.x { background: #d8e6f7; }
 .cell.last-move.o { background: #f5d6d2; }
 
-.cell.agent-pick {
-  outline: 3px solid #2ca02c;
-  outline-offset: -3px;
-}
-
 /* --- caption + stats --- */
 .caption {
   text-align: center;
@@ -195,7 +171,7 @@ select:disabled {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.5rem;
   margin: 0 0 2rem;
   padding: 0.7rem;

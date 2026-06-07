@@ -14,19 +14,9 @@
 
   <main>
     <section class="controls">
-      <label class="control">
-        <span>You play:</span>
-        <select id="side">
-          <option value="X">X (first)</option>
-          <option value="O">O (second)</option>
-        </select>
-      </label>
       <button id="new-game" type="button">New game</button>
+      <span id="turn"></span>
     </section>
-
-    <div id="status" class="status" role="status" aria-live="polite">
-      Click any cell to play.
-    </div>
 
     <div id="board" class="board" role="grid" aria-label="tic-tac-toe board">
       <!-- 9 cells populated by app.js -->
@@ -35,13 +25,11 @@
     <p class="caption">
       Numbers in empty cells are Q-values from the current player's
       perspective. A positive value favors whoever is about to move.
-      Click the status bar to let the computer play.
     </p>
 
     <dl class="stats">
       <div><dt>Agent's Q-table</dt><dd><span id="qsize">—</span> states</dd></div>
       <div><dt>This game</dt><dd><span id="movecount">0</span> moves</dd></div>
-      <div><dt>Last agent move</dt><dd><span id="lastq">—</span></dd></div>
     </dl>
   </main>
 
