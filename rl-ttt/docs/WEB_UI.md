@@ -33,21 +33,16 @@ python -m http.server -d web 8000
 
 A 3×3 board. Empty cells display the **agent's** Q-value for playing
 there, computed by looking up the Q-table in the side-to-move canonical
-key (see [JS-side lookup](#js-side-lookup) below). The agent always plays
-greedy (argmax of the Q-array over legal cells, with the smallest cell
-index breaking ties — the trained agent uses uniform-random tie-breaks
-but the showcase picks deterministically to feel less random).
+key (see [JS-side lookup](#js-side-lookup) below). All moves are placed
+manually by the user — no computer opponent. X always moves first,
+then O, alternating.
 
 Controls:
-- **You play:** drop-down — `X (first)` or `O (second)`. X always moves
-  first. Changes take effect on the next **New game** click.
-- **New game:** resets the board; if the user is O, the agent opens.
-- **Click any cell** to play (only legal cells are clickable during your
-  turn).
+- **New game:** resets the board; X opens.
+- **Click any empty cell** to place a move. X and O alternate automatically.
 
-End of game shows a banner with the outcome plus a "New game" button. The
-stats panel below the board tracks the agent's Q-table size, this game's
-move count, and the Q-value of the agent's most recent move.
+End of game shows a banner with the outcome. The stats panel below the
+board tracks the agent's Q-table size and this game's move count.
 
 ## File layout
 
@@ -97,44 +92,25 @@ Encoding details:
 
 The page tracks an **absolute** board where `+1 = X` and `-1 = O`. The
 Q-table is keyed by **side-to-move canonical** states where the actor
-(side-to-move) is always `+1`. To look up the agent's Q-values, the JS
-flips the absolute board so the **agent** is the actor.
+(side-to-move) is always `+1`. To look up Q-values, the JS flips the
+absolute board so the **current player** is the actor.
 
 ```js
-// userSide = "X" means the user is X, so the agent is O (= -1 in absolute).
-// userSide = "O" means the user is O, so the agent is X (= +1 in absolute).
-function canonicalForAgent(board) {
-  const agentMarker = userSide === "O" ? +1 : -1;
-  return board.map((v) => agentMarker * v);
+function canonicalForCurrentPlayer(board) {
+  const currentPlayer = sideToMovePiece(); // +1 = X, -1 = O
+  return board.map((v) => currentPlayer * v);
 }
 
-function getAgentQValues(board) {
-  const key = canonicalForAgent(board).join(",");
+function getCurrentQValues(board) {
+  const key = canonicalForCurrentPlayer(board).join(",");
   return QTABLE.states[key];
 }
 ```
 
-The numbers displayed in empty cells are `getAgentQValues(board)[i]`,
-i.e., the agent's Q-value for playing cell `i` if it were the agent's
-turn right now. The user can scan the row and see exactly which cell the
-agent will pick (the highest) and how confident the agent is.
-
-The agent's move selection itself is a straight argmax:
-
-```js
-function agentPickMove(board) {
-  const q = getAgentQValues(board);
-  let best = -Infinity, bestCell = -1;
-  for (const i of legalMoves(board)) {
-    if (q[i] > best) { best = q[i]; bestCell = i; }
-  }
-  return { cell: bestCell, q: best };
-}
-```
-
-`agentPickMove` is called only when `sideToMoveName() !== userSide`, but
-the Q-values are *displayed* on every turn (Q4 from the design discussion
-in `docs/RESULTS.md`: always show the agent's perspective).
+The numbers displayed in empty cells are `getCurrentQValues(board)[i]`,
+i.e., the Q-value for playing cell `i` from the perspective of the player
+whose turn it is. This lets the user explore both optimal and sub-optimal
+moves while seeing how the agent values each option.
 
 ## Limitations
 

@@ -4,9 +4,8 @@
 // We can't fully test DOM rendering without jsdom, but we CAN verify:
 //   1. qtable.js loads and QTABLE is populated
 //   2. app.js loads without throwing
-//   3. The game state initializes correctly (board empty, userSide = X)
-//   4. agentPickMove is deterministic and returns legal moves
-//   5. canonicalForCurrentPlayer logic is correct (spot checks)
+//   3. The game state initializes correctly (board empty)
+//   4. canonicalForCurrentPlayer logic is correct (spot checks)
 //
 // Run from the web/ directory:  node smoke.js
 
@@ -61,12 +60,10 @@ class FakeElement {
 
 const elements = {
   board: new FakeElement("div"),
-  status: new FakeElement("div"),
-  side: new FakeElement("select"),
+  turn: new FakeElement("div"),
   "new-game": new FakeElement("button"),
   movecount: new FakeElement("div"),
   qsize: new FakeElement("div"),
-  lastq: new FakeElement("div"),
 };
 
 const document = {
