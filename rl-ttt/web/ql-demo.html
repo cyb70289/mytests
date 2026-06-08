@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>How Q-Learning Works — rl-ttt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="ql-demo.css">
+</head>
+<body>
+  <header>
+    <h1>How Q-Learning Works</h1>
+    <p class="subtitle">Watch TD(0) propagate terminal rewards backward across repeated play.</p>
+  </header>
+
+  <main>
+    <section class="legend">
+      <div class="legend-item"><span class="legend-swatch x">X</span> Trainee (learner)</div>
+      <div class="legend-item"><span class="legend-swatch o">O</span> Opponent (pre-scripted)</div>
+      <div class="legend-item"><span class="legend-param">&alpha; = 0.1</span></div>
+      <div class="legend-item"><span class="legend-param">&gamma; = 1.0</span></div>
+      <div class="legend-item"><span class="legend-swatch pos">+</span> Positive update</div>
+      <div class="legend-item"><span class="legend-swatch neg">−</span> Negative update</div>
+      <div class="legend-item"><span class="legend-swatch zero">0</span> No change</div>
+    </section>
+
+    <div id="episodes"><!-- JS-populated --></div>
+  </main>
+
+  <footer>
+    <p>
+      This page runs entirely in your browser. No trained model required.<br>
+      <a href="index.html">&larr; Play against the trained agent</a>
+    </p>
+  </footer>
+
+  <script src="ql-demo.js"></script>
+</body>
+</html>
