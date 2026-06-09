@@ -133,12 +133,18 @@
       Red = positive Q-value (favors O). Green = negative Q-value (disfavors O).
       Darker = stronger signal. Red bar on progress = phase 1a &rarr; 1b.
     </p>
+
+    <p id="no-data-msg" class="caption" style="color:#c0463a;display:none">
+      Data not loaded. Generate it with:<br>
+      <code style="background:#eee;padding:0.1rem 0.3rem;border-radius:3px">python scripts/log_qstate.py</code>
+    </p>
   </main>
 
   <footer>
     <a href="index.html">&larr; Play against the trained agent</a>
   </footer>
 
+  <script src="qstate-data.js"></script>
   <script>
   (function () {
     var TOTAL_EPISODES = 150000;
@@ -371,21 +377,21 @@
       panels.push(p);
     }
 
-    // Load data and wire up snapshots.
-    fetch("qstate-data.json")
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        TOTAL_EPISODES = d.total_episodes;
-        EPISODES_PER_FRAME = TOTAL_EPISODES / TOTAL_FRAMES;
-        for (var c = 0; c < panels.length && c < (d.cases || []).length; c++) {
-          panels[c].snapshots = d.cases[c].snapshots || [];
-          panels[c].btnPlay.disabled = false;
-          panels[c].btnReset.disabled = false;
-        }
-      })
-      .catch(function (err) {
-        console.error("Failed to load Q-state data:", err);
-      });
+    // Load data — window.QSTATEDATA is assigned by the <script> tag above.
+    // This works with file:// and HTTP alike.
+    var data = window.QSTATEDATA;
+
+    if (data) {
+      TOTAL_EPISODES = data.total_episodes;
+      EPISODES_PER_FRAME = TOTAL_EPISODES / TOTAL_FRAMES;
+      for (var c = 0; c < panels.length && c < (data.cases || []).length; c++) {
+        panels[c].snapshots = data.cases[c].snapshots || [];
+        panels[c].btnPlay.disabled = false;
+        panels[c].btnReset.disabled = false;
+      }
+    } else {
+      document.getElementById("no-data-msg").style.display = "block";
+    }
   })();
   </script>
 </body>
