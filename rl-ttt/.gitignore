@@ -29,7 +29,7 @@ artifacts/*
 web/qtable.js
 
 # Q-state animation data (regenerate via `python scripts/log_qstate.py`)
-web/qstate-data.json
+web/qstate-data.js
 
 # IDE / editor
 .vscode/
