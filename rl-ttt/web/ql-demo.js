@@ -9,18 +9,14 @@ var CHAPTERS = [
   {
     title: "X Wins",
     episodes: [
-      { label: "Episode 1 — First win",  moves: [4, 0, 2, 8, 6] },
-      { label: "Episode 2 — Replay (same moves)", moves: [4, 0, 2, 8, 6] },
+      { label: "X center \u2192 O corner \u2192 X corner \u2192 O corner \u2192 X wins", moves: [4, 0, 2, 8, 6] },
     ],
-    bridge: "Episode 1 set Q for the winning state to 0.10. But the intermediate Q-updates all came out to 0 \u2014 their downstream states had no value yet. Episode 2 replays the exact same game. Now the second-to-last move bootstraps on the 0.10 terminal value and gets Q \u2248 0.01. The very first move is still 0 (it needs a third replay to propagate that far).",
   },
   {
     title: "X Loses",
     episodes: [
-      { label: "Episode 3 — First loss", moves: [4, 0, 3, 1, 8, 2] },
-      { label: "Episode 4 — Replay (same moves)", moves: [4, 0, 3, 1, 8, 2] },
+      { label: "X center \u2192 O corner \u2192 X edge \u2192 O edge \u2192 X corner \u2192 O wins", moves: [4, 0, 3, 1, 8, 2] },
     ],
-    bridge: "Episode 3 set Q for X\u2019s losing move to \u22120.10. Everything else stayed at 0. Episode 4 replays the same game \u2014 the negative value propagates one step backward. The earlier X move now drops to \u22120.01 because it led into the now-negative state.",
   },
 ];
 
@@ -223,7 +219,6 @@ function replayAllEpisodes(chapters) {
 
     allChapterResults.push({
       title: chapter.title,
-      bridge: chapter.bridge,
       episodes: chapterEpisodes,
     });
   }
@@ -305,60 +300,58 @@ function renderTermOutcome(snap) {
 
 // ---- full render ----------------------------------------------------------
 
-function renderEpisode(epData) {
-  var snaps = epData.snapshots;
-  var html = '<div class="episode-label">' + epData.label + '</div>';
-  html += '<div class="episode-row">';
+function renderMoveCard(s) {
+  var cardClass = "move-card";
+  if (s.isTerminal && s.winner === "X") cardClass += " term-win";
+  else if (s.isTerminal && s.winner === "O") cardClass += " term-loss";
 
-  for (var i = 0; i < snaps.length; i++) {
-    var s = snaps[i];
+  var html = '<div class="' + cardClass + '">';
 
-    if (i > 0) {
-      html += '<div class="episode-arrow">\u2192</div>';
-    }
+  html += '<div class="move-card-header">';
+  html += '<span class="' + (s.player === "X" ? "x-move" : "o-move") + '">';
+  html += s.player + " plays cell " + s.cell;
+  html += '</span>';
+  html += '</div>';
 
-    var cardClass = "move-card";
-    if (s.isTerminal && s.winner === "X") cardClass += " term-win";
-    else if (s.isTerminal && s.winner === "O") cardClass += " term-loss";
+  var qVals = null;
+  if (s.player === "X" && s.qValues) {
+    qVals = s.qValues;
+  }
+  html += renderMiniBoard(s.boardBefore, s.cell, qVals);
+  html += renderTermOutcome(s);
 
-    html += '<div class="' + cardClass + '">';
-
-    html += '<div class="move-card-header">';
-    html += '<span class="' + (s.player === "X" ? "x-move" : "o-move") + '">';
-    html += s.player + " plays cell " + s.cell;
-    html += '</span>';
-    html += '</div>';
-
-    var qVals = null;
-    if (s.player === "X" && s.qValues) {
-      qVals = s.qValues;
-    }
-    html += renderMiniBoard(s.boardBefore, s.cell, qVals);
-
-    html += renderTermOutcome(s);
-
-    if (s.player === "X" && s.qInfo) {
-      html += renderQUpdate(s.qInfo);
-    }
-
-    html += '</div>';
+  if (s.player === "X" && s.qInfo) {
+    html += renderQUpdate(s.qInfo);
   }
 
   html += '</div>';
   return html;
 }
 
+function renderSnapRow(snaps) {
+  var html = '<div class="episode-row">';
+  for (var i = 0; i < snaps.length; i++) {
+    if (i > 0) {
+      html += '<div class="episode-arrow">\u2192</div>';
+    }
+    html += renderMoveCard(snaps[i]);
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderEpisode(epData) {
+  var snaps = epData.snapshots;
+  var html = '<div class="episode-label">' + epData.label + '</div>';
+  html += renderSnapRow(snaps);
+  return html;
+}
+
 function renderChapter(chData) {
   var html = '<h2 class="chapter-heading">' + chData.title + '</h2>';
-
   for (var ei = 0; ei < chData.episodes.length; ei++) {
     html += renderEpisode(chData.episodes[ei]);
-    // Insert bridge between episode 1-2 and 3-4
-    if (ei === 0) {
-      html += '<div class="bridge">' + chData.bridge + '</div>';
-    }
   }
-
   return html;
 }
 
