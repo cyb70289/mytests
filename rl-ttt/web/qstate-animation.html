@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Q-value Animation · rl-ttt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      background: #fafafa; color: #222; line-height: 1.5;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    header {
+      text-align: center; margin: 2rem 1rem 1.5rem;
+    }
+    header h1 { font-size: 2.2rem; margin: 0 0 0.2rem; letter-spacing: -0.02em; }
+    .subtitle { margin: 0; color: #666; font-size: 1.05rem; }
+
+    main {
+      width: 100%; max-width: 1100px; padding: 0 1rem;
+      display: flex; flex-direction: column; align-items: stretch;
+    }
+
+    .boards-container {
+      display: flex; gap: 5rem; justify-content: center;
+      margin: 0 0 1rem;
+    }
+
+    .board-panel {
+      flex: 1; min-width: 320px; max-width: 480px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    .board-label {
+      font-size: 1rem; font-weight: 600; color: #555;
+      margin: 0 0 0.6rem; text-align: center; line-height: 1.3;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 6px; background: #333; border: 3px solid #333;
+      border-radius: 8px; aspect-ratio: 1 / 1; width: 100%;
+      margin: 0; user-select: none;
+    }
+
+    .cell {
+      display: flex; align-items: center; justify-content: center;
+      position: relative; font-weight: 700;
+      transition: background-color 0.05s linear;
+      background: white;
+    }
+
+    .cell .piece {
+      font-size: 3.6rem; line-height: 1; font-weight: 800;
+      color: #1a3a7a;
+    }
+
+    .cell .qval {
+      font-size: 1.5rem; font-weight: 400;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    .board-controls {
+      display: flex; gap: 0.5rem; margin: 0.6rem 0 0.4rem;
+    }
+
+    button {
+      font: inherit; padding: 0.5rem 1rem; border: 1px solid #2c5fa8;
+      border-radius: 6px; background: #2c5fa8; color: white;
+      font-weight: 600; cursor: pointer; min-width: 80px;
+      font-size: 0.95rem;
+    }
+    button:hover { background: #1f4a8a; }
+    button:disabled { background: #b8c4d4; border-color: #b8c4d4; cursor: not-allowed; }
+
+    button.btn-reset {
+      background: white; color: #555; border-color: #ccc;
+    }
+    button.btn-reset:hover { background: #f0f0f0; }
+    button.btn-reset:disabled { background: #eee; color: #aaa; border-color: #ddd; }
+
+    .board-progress {
+      position: relative;
+      width: 100%; height: 8px; background: #e0e0e0;
+      border-radius: 4px; overflow: hidden; margin: 0 0 0.2rem;
+    }
+    .board-progress-fill {
+      height: 100%; background: #2c5fa8; border-radius: 4px;
+      width: 0%; transition: width 0.05s linear;
+    }
+    .phase-marker {
+      position: absolute; top: 0; height: 100%; width: 2px;
+      background: #c0463a; z-index: 1;
+    }
+
+    .board-ep {
+      font-size: 0.85rem; color: #888;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      margin: 0 0 0;
+    }
+
+    .caption {
+      text-align: center; font-size: 0.85rem; color: #777; margin: 0 0 2rem;
+    }
+
+    footer {
+      margin: 1rem 0 2rem; padding: 0 1rem; text-align: center;
+      font-size: 0.8rem; color: #888;
+    }
+    footer a { color: #2c5fa8; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Q-value Animation</h1>
+    <p class="subtitle">Watch Q-values evolve across training for two opening positions.</p>
+  </header>
+
+  <main>
+    <div class="boards-container" id="boards-container">
+      <!-- populated by JS -->
+    </div>
+
+    <p class="caption">
+      Red = positive Q-value (favors O). Green = negative Q-value (disfavors O).
+      Darker = stronger signal. Red bar on progress = phase 1a &rarr; 1b.
+    </p>
+  </main>
+
+  <footer>
+    <a href="index.html">&larr; Play against the trained agent</a>
+  </footer>
+
+  <script>
+  (function () {
+    var TOTAL_EPISODES = 150000;
+    var TOTAL_FRAMES = 600;
+    var DURATION_MS = 10000;
+    var FRAME_INTERVAL = DURATION_MS / TOTAL_FRAMES;
+    var EPISODES_PER_FRAME = TOTAL_EPISODES / TOTAL_FRAMES;
+
+    var elContainer = document.getElementById("boards-container");
+    var panels = [];
+
+    /* ---- colour helpers ---- */
+
+    function qColor(q) {
+      if (q === null || q === undefined || q === 0) return null;
+      var clamped = Math.max(-1, Math.min(1, q));
+      var absQ = Math.abs(clamped);
+      var lightness = Math.round(100 - absQ * 60);
+      var hue = clamped < 0 ? 120 : 0;
+      return "hsl(" + hue + ", 70%, " + lightness + "%)";
+    }
+
+    function textColor(q) {
+      if (q === null || q === undefined) return "#222";
+      return Math.abs(q) > 0.5 ? "#fff" : "#222";
+    }
+
+    /* ---- Q-value lookup ---- */
+
+    function getQValues(snapshots, targetEp) {
+      var lo = 0, hi = snapshots.length - 1, best = null;
+      while (lo <= hi) {
+        var mid = (lo + hi) >>> 1;
+        if (snapshots[mid].ep <= targetEp) {
+          best = snapshots[mid].q;
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
+      }
+      return best || [0, 0, 0, 0, null, 0, 0, 0, 0];
+    }
+
+    /* ---- Board panel builder ---- */
+
+    function buildPanel(label, piecePos, phaseBoundary) {
+      var panel = document.createElement("div");
+      panel.className = "board-panel";
+
+      var lbl = document.createElement("div");
+      lbl.className = "board-label";
+      lbl.textContent = label;
+      panel.appendChild(lbl);
+
+      var board = document.createElement("div");
+      board.className = "board";
+
+      var cells = [];
+      var qvalSpans = [];
+      for (var i = 0; i < 9; i++) {
+        var cell = document.createElement("div");
+        cell.className = "cell";
+
+        if (i === piecePos) {
+          var piece = document.createElement("span");
+          piece.className = "piece";
+          piece.textContent = "X";
+          cell.appendChild(piece);
+        } else {
+          var span = document.createElement("span");
+          span.className = "qval";
+          span.textContent = "0.000";
+          cell.appendChild(span);
+          qvalSpans[i] = span;
+        }
+
+        board.appendChild(cell);
+        cells.push(cell);
+      }
+
+      panel.appendChild(board);
+
+      var controls = document.createElement("div");
+      controls.className = "board-controls";
+
+      var btnPlay = document.createElement("button");
+      btnPlay.textContent = "Play";
+      btnPlay.disabled = true;
+      controls.appendChild(btnPlay);
+
+      var btnReset = document.createElement("button");
+      btnReset.className = "btn-reset";
+      btnReset.textContent = "Reset";
+      btnReset.disabled = true;
+      controls.appendChild(btnReset);
+
+      panel.appendChild(controls);
+
+      var progressWrap = document.createElement("div");
+      progressWrap.className = "board-progress";
+      var progressFill = document.createElement("div");
+      progressFill.className = "board-progress-fill";
+      progressWrap.appendChild(progressFill);
+
+      var phaseMarker = document.createElement("div");
+      phaseMarker.className = "phase-marker";
+      phaseMarker.style.left = (phaseBoundary / TOTAL_EPISODES * 100) + "%";
+      progressWrap.appendChild(phaseMarker);
+
+      panel.appendChild(progressWrap);
+
+      var epLabel = document.createElement("div");
+      epLabel.className = "board-ep";
+      epLabel.textContent = "Ep 0 / " + TOTAL_EPISODES;
+      panel.appendChild(epLabel);
+
+      return {
+        panel: panel,
+        piecePos: piecePos,
+        snapshots: [],
+        cells: cells,
+        qvalSpans: qvalSpans,
+        btnPlay: btnPlay,
+        btnReset: btnReset,
+        progressFill: progressFill,
+        epLabel: epLabel,
+        frameIndex: 0,
+        playing: false,
+        timerId: null,
+      };
+    }
+
+    /* ---- per-panel rendering ---- */
+
+    function renderPanel(p) {
+      var targetEp = Math.min(TOTAL_EPISODES, Math.ceil((p.frameIndex + 1) * EPISODES_PER_FRAME));
+      var qs = getQValues(p.snapshots, targetEp);
+
+      for (var i = 0; i < 9; i++) {
+        if (i === p.piecePos) continue;
+        var q = qs[i];
+        var bg = qColor(q);
+        p.cells[i].style.backgroundColor = bg || "white";
+        if (p.qvalSpans[i]) {
+          p.qvalSpans[i].textContent = q === null ? "" : q.toFixed(3);
+          p.qvalSpans[i].style.color = textColor(q);
+        }
+      }
+
+      var pct = (targetEp / TOTAL_EPISODES) * 100;
+      p.progressFill.style.width = pct.toFixed(1) + "%";
+      p.epLabel.textContent = "Ep " + targetEp + " / " + TOTAL_EPISODES;
+    }
+
+    function resetPanel(p) {
+      p.frameIndex = 0;
+      p.playing = false;
+      if (p.timerId !== null) { clearInterval(p.timerId); p.timerId = null; }
+      p.btnPlay.textContent = "Play";
+      p.progressFill.style.width = "0%";
+      for (var i = 0; i < 9; i++) {
+        if (i === p.piecePos) continue;
+        p.cells[i].style.backgroundColor = "white";
+        if (p.qvalSpans[i]) {
+          p.qvalSpans[i].textContent = "0.000";
+          p.qvalSpans[i].style.color = "#222";
+        }
+      }
+      p.epLabel.textContent = "Ep 0 / " + TOTAL_EPISODES;
+    }
+
+    /* ---- per-panel playback ---- */
+
+    function stopPanel(p) {
+      if (p.timerId !== null) { clearInterval(p.timerId); p.timerId = null; }
+    }
+
+    function startPanel(p) {
+      stopPanel(p);
+      p.timerId = setInterval(function () {
+        if (p.frameIndex < TOTAL_FRAMES - 1) {
+          p.frameIndex++;
+          renderPanel(p);
+        }
+        if (p.frameIndex >= TOTAL_FRAMES - 1) {
+          p.playing = false;
+          stopPanel(p);
+          p.btnPlay.textContent = "Play";
+        }
+      }, FRAME_INTERVAL);
+    }
+
+    function playPanel(p) {
+      if (p.frameIndex >= TOTAL_FRAMES - 1) { p.frameIndex = 0; renderPanel(p); }
+      p.playing = true;
+      p.btnPlay.textContent = "Pause";
+      startPanel(p);
+    }
+
+    function pausePanel(p) {
+      p.playing = false;
+      stopPanel(p);
+      p.btnPlay.textContent = "Play";
+    }
+
+    /* ---- init ---- */
+
+    // Build panels immediately with default config so X is visible right away.
+    var DEFAULT_CASES = [
+      { label: "X in center, O to move",   piecePos: 4 },
+      { label: "X in upper right, O to move", piecePos: 2 },
+    ];
+    var DEFAULT_PHASE_BOUNDARY = 50000;
+
+    for (var c = 0; c < DEFAULT_CASES.length; c++) {
+      var dc = DEFAULT_CASES[c];
+      var p = buildPanel(dc.label, dc.piecePos, DEFAULT_PHASE_BOUNDARY);
+      elContainer.appendChild(p.panel);
+
+      p.btnPlay.addEventListener("click", (function (panel) {
+        return function () {
+          if (panel.playing) { pausePanel(panel); } else { playPanel(panel); }
+        };
+      })(p));
+
+      p.btnReset.addEventListener("click", (function (panel) {
+        return function () { resetPanel(panel); };
+      })(p));
+
+      panels.push(p);
+    }
+
+    // Load data and wire up snapshots.
+    fetch("qstate-data.json")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        TOTAL_EPISODES = d.total_episodes;
+        EPISODES_PER_FRAME = TOTAL_EPISODES / TOTAL_FRAMES;
+        for (var c = 0; c < panels.length && c < (d.cases || []).length; c++) {
+          panels[c].snapshots = d.cases[c].snapshots || [];
+          panels[c].btnPlay.disabled = false;
+          panels[c].btnReset.disabled = false;
+        }
+      })
+      .catch(function (err) {
+        console.error("Failed to load Q-state data:", err);
+      });
+  })();
+  </script>
+</body>
+</html>

@@ -28,6 +28,9 @@ artifacts/*
 # Exported Q-table for the web UI (regenerate via `python -m rl_ttt export`)
 web/qtable.js
 
+# Q-state animation data (regenerate via `python scripts/log_qstate.py`)
+web/qstate-data.json
+
 # IDE / editor
 .vscode/
 .idea/

@@ -38,6 +38,7 @@ from rl_ttt.opponents import minimax_player, random_player
 # --- public types -----------------------------------------------------------
 
 Player = Callable[[Board, np.random.Generator | None], int]
+PerEpisodeCallback = Callable[[int, QLearningAgent], None]
 
 
 @dataclass
@@ -202,6 +203,7 @@ def _eval_cycle(
 def train_phase_1a(
     cfg: TrainConfig,
     progress: bool = False,
+    per_episode_callback: PerEpisodeCallback | None = None,
 ) -> tuple[QLearningAgent, list[dict]]:
     """Train the agent against a random opponent (stationary environment).
 
@@ -224,6 +226,7 @@ def train_phase_1a(
         eval_rng=eval_rng,
         progress=progress,
         progress_desc="phase 1a (vs random)",
+        per_episode_callback=per_episode_callback,
     )
     return agent, history
 
@@ -232,6 +235,7 @@ def train_phase_1b(
     cfg: TrainConfig,
     warm_start: QLearningAgent | None = None,
     progress: bool = False,
+    per_episode_callback: PerEpisodeCallback | None = None,
 ) -> tuple[QLearningAgent, list[dict]]:
     """Self-play training with a shared Q-table. Optionally warm-started.
 
@@ -267,6 +271,7 @@ def train_phase_1b(
         eval_rng=eval_rng,
         progress=progress,
         progress_desc="phase 1b (self-play)",
+        per_episode_callback=per_episode_callback,
     )
     return agent, history
 
@@ -279,6 +284,7 @@ def _training_loop(
     eval_rng: np.random.Generator,
     progress: bool,
     progress_desc: str,
+    per_episode_callback: PerEpisodeCallback | None = None,
 ) -> list[dict]:
     """Shared training loop: episodes + epsilon decay + periodic eval."""
     history: list[dict] = []
@@ -296,6 +302,9 @@ def _training_loop(
             ep, cfg.eps_start, cfg.eps_end, cfg.eps_decay_episodes
         )
         _run_episode(agent, opponent, rng, train=True)
+
+        if per_episode_callback is not None:
+            per_episode_callback(ep, agent)
 
         if (ep + 1) % cfg.eval_every == 0:
             history.append(

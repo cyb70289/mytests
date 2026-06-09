@@ -64,6 +64,10 @@ class QLearningAgent:
             self._q_table[board] = q
         return q
 
+    def has_state(self, board: Board) -> bool:
+        """Return True if `board` has been seen and is in the Q-table."""
+        return board in self._q_table
+
     @property
     def num_states(self) -> int:
         """Number of distinct states currently in the Q-table."""
