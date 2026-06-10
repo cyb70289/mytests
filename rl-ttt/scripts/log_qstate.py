@@ -38,12 +38,12 @@ CASES: list[dict] = [
     {
         "state": (0, 0, 0, 0, -1, 0, 0, 0, 0),
         "label": "X in center, O to move",
-        "piece_pos": 4,
+        "pieces": [{"pos": 4, "glyph": "X"}],
     },
     {
-        "state": (0, 0, -1, 0, 0, 0, 0, 0, 0),
-        "label": "X in upper right, O to move",
-        "piece_pos": 2,
+        "state": (0, 0, 1, 0, 0, -1, 0, 0, 0),
+        "label": "X upper right, O under, X to move",
+        "pieces": [{"pos": 2, "glyph": "X"}, {"pos": 5, "glyph": "O"}],
     },
 ]
 
@@ -162,7 +162,7 @@ def run(seed: int, out_path: Path, quiet: bool = False) -> None:
             {
                 "state": list(c["state"]),
                 "label": c["label"],
-                "piece_pos": c["piece_pos"],
+                "pieces": c["pieces"],
                 "snapshots": logger.snapshots,
             }
             for c, logger in zip(CASES, loggers)

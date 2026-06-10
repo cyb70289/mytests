@@ -60,8 +60,9 @@
 
     .cell .piece {
       font-size: 3.6rem; line-height: 1; font-weight: 800;
-      color: #1a3a7a;
     }
+    .cell .piece-x { color: #1a3a7a; }
+    .cell .piece-o { color: #c0463a; }
 
     .cell .qval {
       font-size: 1.5rem; font-weight: 400;
@@ -190,7 +191,8 @@
 
     /* ---- Board panel builder ---- */
 
-    function buildPanel(label, piecePos, phaseBoundary) {
+    function buildPanel(label, pieces, phaseBoundary) {
+      // pieces: [{pos: int, glyph: "X"|"O"}, ...]
       var panel = document.createElement("div");
       panel.className = "board-panel";
 
@@ -202,16 +204,23 @@
       var board = document.createElement("div");
       board.className = "board";
 
+      // Build a quick lookup: piecePos -> glyph
+      var pieceMap = {};
+      for (var pi = 0; pi < pieces.length; pi++) {
+        pieceMap[pieces[pi].pos] = pieces[pi].glyph;
+      }
+
       var cells = [];
       var qvalSpans = [];
       for (var i = 0; i < 9; i++) {
         var cell = document.createElement("div");
         cell.className = "cell";
 
-        if (i === piecePos) {
+        var glyph = pieceMap[i];
+        if (glyph) {
           var piece = document.createElement("span");
-          piece.className = "piece";
-          piece.textContent = "X";
+          piece.className = "piece piece-" + glyph.toLowerCase();
+          piece.textContent = glyph;
           cell.appendChild(piece);
         } else {
           var span = document.createElement("span");
@@ -263,7 +272,7 @@
 
       return {
         panel: panel,
-        piecePos: piecePos,
+        pieceMap: pieceMap,
         snapshots: [],
         cells: cells,
         qvalSpans: qvalSpans,
@@ -284,7 +293,7 @@
       var qs = getQValues(p.snapshots, targetEp);
 
       for (var i = 0; i < 9; i++) {
-        if (i === p.piecePos) continue;
+        if (p.pieceMap[i]) continue;
         var q = qs[i];
         var bg = qColor(q);
         p.cells[i].style.backgroundColor = bg || "white";
@@ -306,7 +315,7 @@
       p.btnPlay.textContent = "Play";
       p.progressFill.style.width = "0%";
       for (var i = 0; i < 9; i++) {
-        if (i === p.piecePos) continue;
+        if (p.pieceMap[i]) continue;
         p.cells[i].style.backgroundColor = "white";
         if (p.qvalSpans[i]) {
           p.qvalSpans[i].textContent = "0.000";
@@ -352,16 +361,16 @@
 
     /* ---- init ---- */
 
-    // Build panels immediately with default config so X is visible right away.
+    // Build panels immediately with default config so pieces are visible right away.
     var DEFAULT_CASES = [
-      { label: "X in center, O to move",   piecePos: 4 },
-      { label: "X in upper right, O to move", piecePos: 2 },
+      { label: "X in center, O to move",   pieces: [{pos: 4, glyph: "X"}] },
+      { label: "X upper right, O under, X to move", pieces: [{pos: 2, glyph: "X"}, {pos: 5, glyph: "O"}] },
     ];
     var DEFAULT_PHASE_BOUNDARY = 50000;
 
     for (var c = 0; c < DEFAULT_CASES.length; c++) {
       var dc = DEFAULT_CASES[c];
-      var p = buildPanel(dc.label, dc.piecePos, DEFAULT_PHASE_BOUNDARY);
+      var p = buildPanel(dc.label, dc.pieces, DEFAULT_PHASE_BOUNDARY);
       elContainer.appendChild(p.panel);
 
       p.btnPlay.addEventListener("click", (function (panel) {
