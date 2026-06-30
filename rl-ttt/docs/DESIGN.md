@@ -20,11 +20,6 @@ fundamentals. Tic-tac-toe is the substrate because:
 
 **Tabular Q-learning.** Off-policy TD(0) control with a dict-backed Q-table.
 
-DQN (deep Q-network) is explicitly **deferred** to a future iteration. The
-rationale: experience the RL fundamentals in a fully transparent setting
-first, so when the Q-table is later replaced by a neural network you know
-exactly what the network is approximating.
-
 ## Training Curriculum
 
 Two sequential phases inside tabular Q-learning:

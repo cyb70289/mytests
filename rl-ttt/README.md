@@ -5,10 +5,8 @@ tic-tac-toe. Designed to make every part of the RL pipeline transparent and
 inspectable, with the goal of deeply understanding RL fundamentals through a
 real example.
 
-> **Status:** Complete. All seven stages from `docs/PLAN.md` are implemented
-> and the final agent plays **optimal tic-tac-toe** (100% draws vs the
-> perfect minimax opponent). See `docs/RESULTS.md` for the full training
-> report and `docs/DESIGN.md` for the design decisions.
+See `docs/RESULTS.md` for the full training report and `docs/DESIGN.md` for
+the design decisions.
 
 ## Results (50k phase-1a + 100k phase-1b, seed=0)
 
